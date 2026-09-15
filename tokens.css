@@ -1,0 +1,286 @@
+/* ============================================================
+   Duolingo dark-mode design tokens
+   Extracted Sept 4 2026 from:
+     Solo_Course_Path.PNG, Review_Course_Path.PNG,
+     Quest_Page_with_Friends_Quest.PNG   (728 x 1568 px each)
+
+   Method: pixel-sampled (modal colour over flat regions, vertical
+   scanlines across every face/edge boundary). NOT eyeballed.
+
+   FRAME: CONFIRMED 393 x 852 CSS px (native capture 1179 x 2556).
+   Build every screen inside a fixed box of exactly that size.
+   All values below are CSS px at that width and need no rescaling.
+
+   Horizontal scale verified: the unit banner measures 632 image px
+   and 341 CSS px -> 1.8534, matching 728/393 = 1.8524.
+
+   SCALE RESOLVED — and it is uniform, 1.8404 on BOTH axes.
+   These copies are 728 x 1568. The content is only 723 px wide;
+   the last ~5 px is right-side padding from the same pad-to-a-
+   multiple-of-28 rule that padded the cropped assets (728 = 26x28,
+   1568 = 56x28). Proof: the iOS home indicator, which is always
+   horizontally centred, sits 3 px left of the file's centre, and
+   at 723 px content width the unit banner and the bottom nav both
+   come out symmetric to within 0.15 px.
+
+   So divide BOTH axes by 1.8404. Dividing x by 728/393 = 1.8524
+   makes every horizontal measurement 0.65% too small, which
+   compounds to ~2.5 px by the right edge of the screen.
+
+   Values marked [ASSUMED] could not be measured from these three
+   screens. Values marked [±] were measured but are soft by ~1-2px
+   or blend with antialiasing. Everything else is a direct read.
+   ============================================================ */
+
+:root {
+
+  /* ---------- Font ----------
+     Feather Bold is proprietary. Nunito is the substitute.
+     Sizes below are tuned so Nunito's cap height (0.705 em) matches
+     the cap height measured in the reference — they are not the
+     original font's nominal sizes. */
+  --font-family: 'Nunito', -apple-system, system-ui, sans-serif;
+  --font-weight-body: 700;   /* nothing in the app is lighter than bold */
+  --font-weight-bold: 800;   /* titles, node labels, button labels */
+
+  /* ---------- Type scale ----------
+     Four sizes account for all text across the three screens. */
+  --text-title:   24px;  /* screen H1: "Quests"                         */
+  --text-lg:      19px;  /* unit title, task title, popup title, names,
+                            body copy — by far the most common size     */
+  --text-md:      15px;  /* banner overline, primary button label,
+                            popup subtitle, status-bar counters         */
+  --text-sm:      14px;  /* secondary button label (NUDGE/GIFT),
+                            grey section labels (FRIENDS QUEST)      [±] */
+
+  --line-height-tight: 1.15;  /* single-line titles and labels          */
+  --line-height-body:  1.45;  /* measured on the 2-line quest subtitle  */
+  --tracking-caps: 0.8px;     /* uppercase labels are tracked out    [±] */
+
+  /* ---------- Surfaces ---------- */
+  --surface-page:         #151F23;  /* FINAL. Near-black page background.
+                                       Confirmed independently by the menu panel. Read
+                                       directly off an untouched asset crop,
+                                       not off the recompressed reference
+                                       copies, which shift near-blacks to
+                                       #171E26. Verified to 1/255.          */
+  --surface-raised:       #232E35;  /* leaderboard highlighted row. Final
+                                       (Sept 10), read off a native capture
+                                       and converted to P3.                 */
+  --surface-illustration: #224356;  /* desaturated blue plate behind the
+                                       Friends Quest paired avatars     */
+  /* ONE token, four jobs: the next-unit rule, the course-menu divider,
+     the progress-bar track and the secondary-button stroke all measured
+     #3A454E from four independent samples. Replaces --surface-track,
+     --rule-next-unit and --rule-divider. */
+  --border-subtle:        #3A454E;
+  --nav-border:           #2B363C;  /* 1px top border of the bottom nav. */
+  --nav-divider:          #2C373C;  /* 2px rule at the top of the bottom nav. Final. */
+  --ring-review:          #2F3A41;  /* Review-range ring (unfilled). Read off native
+                                       Solo_Course_Path_JA_S2U2 (Jamie, Sept 11). The
+                                       container copy reads #323C45: shifted, never use. */
+  --blue-pale-face:       #97D5FA;  /* Section 2 extra unit, node and banner face.
+                                       THE ONE COLOUR TAKEN FROM A CONTAINER COPY:
+                                       (151,213,250), Solo_Course_Path_JA_S2U1_pt_c.
+                                       Accepted by Jamie Sept 11 — bright saturated
+                                       colours have read identically between container
+                                       and native (blue and green exactly). Correct if
+                                       it looks wrong on a native display. */
+  /* Filled review ring = the app's filled progress-arc shade (Jamie, Sept 11).
+     Observed once: the filled segment of the in-progress star in
+     Solo_Course_Path_JA_S2U2 reads (79,135,38) against its face (120,201,60)
+     = --green-face: per-channel ratio 0.658 / 0.672 / 0.633. That ratio is
+     applied to each unit's NATIVE face token. Not a container->native
+     conversion (the banned move): a relationship observed in a reference,
+     applied to native tokens, like the face/edge pairs above. Caveat: the
+     (79,135,38) reading is itself a container value, and container darks
+     read a few units high (page +2/-1/+3, ring +3/+2/+4), so the true shade
+     may be a few units darker. Green round-trips to the measurement by
+     construction, so that is not an independent check. */
+  --ring-filled-blue:      #387497;
+  --ring-filled-green:     #4F8726;
+  --ring-filled-gold:      #A1872B;
+  --ring-filled-blue-pale: #638F9E;
+  --streak-lit:           #EC654D;  /* streak count when lit. Final. Slightly
+                                       under-saturated and unavoidably so: the
+                                       sample clipped red at 255, so the true
+                                       P3 value is outside sRGB gamut. Do not
+                                       try to improve it.                   */
+
+  /* ---------- Accents: every raised element is a two-tone pair ----------
+     -face  = the lit top surface
+     -edge  = the darker band under it that makes the 3D press effect
+     Measured ratio edge/face is roughly 0.8x per channel, consistent
+     across blue and green; gold is shallower (~0.88x). */
+
+  /* Blue — path nodes, unit banner, progress fill, links, gem count */
+  --blue-face:    #55ACEF;
+  --blue-edge:    #3F8BC2;
+  --blue-gloss:   #7DC5F5;  /* diagonal highlight streak on node faces  */
+
+  /* Green — completed/active nodes, banner, popup card, LEGENDARY base */
+  --green-face:   #78C93C;
+  --green-edge:   #5EA32E;
+  --green-gloss:  #96DC55;
+
+  /* Gold — LEGENDARY button, completed daily-quest bar, chests */
+  --gold-face:    #F5C944;
+  --gold-edge:    #E0A63B;
+
+  /* Indigo — the locked/timer tile only. The tile carries a strong
+     diagonal gloss gradient, so the face reads between #4169C8 and
+     #6D8BE5; the value below is the modal.                        [±] */
+  --indigo-face:  #4871F1;
+  --indigo-edge:  #3F5CC4;
+
+  /* Purple — Quests header block. Flat fill, NO bottom edge in the
+     reference; it butts straight onto the page background. The edge
+     token is derived (0.8x) for use if a purple button is needed. */
+  --purple-face:  #896AC7;
+  --purple-edge:  #6E55A0;  /* [ASSUMED — derived, never seen] */
+
+  /* Red/pink — does not appear as a surface in these three screens.
+     Face sampled from the Match Madness card in
+     Leaderboard_Special_Event.PNG; edge derived. */
+  --red-face:     #DC605E;  /* [ASSUMED for these 3 screens] */
+  --red-edge:     #B14D4B;  /* [ASSUMED — derived] */
+
+  /* White — secondary/REVIEW button on a coloured card.
+     Its bottom edge reads #E0F0CD against the green card, i.e. it is
+     translucent white, not an opaque grey. On the page background it
+     will resolve differently.                                     [±] */
+  --white-face:   #FFFFFF;
+  --white-edge:   rgba(255, 255, 255, 0.74);
+
+  /* ---------- Text ---------- */
+  --text-primary:   #FFFFFF;  /* reads #FBFFFF after JPEG-ish noise    */
+  --text-secondary: #778188;  /* grey labels, counts. Final (Sept 10). */
+  --text-muted:     #5B666D;  /* [ASSUMED] only two neutral text tones
+                                 are actually present in these three
+                                 screens; this is interpolated for
+                                 disabled/placeholder use.             */
+  --text-on-banner: rgba(255, 255, 255, 0.7);
+                              /* "SECTION 2, UNIT 1" overline sitting
+                                 on the coloured banner            [±] */
+  --text-link:      #55ACEF;
+  /* Co-learning CTA labels (Sept 11, Jamie). Both read off CONTAINER copies,
+     accepted like --blue-pale-face: bright saturated colours have read
+     identically container vs native so far. Correct on a native display if
+     they look off.
+     - blue: the menu's own blue text ("MORE ABOUT SCORE", score block
+       crop), eroded-core median. The blue secondary crop's own baked
+       label reads brighter (#4BC0F6); Jamie chose the menu's blue.
+     - green: "EXPLAIN MY ANSWER" on secondary-active-cta-button. */
+  --cta-label-blue:  #6DBDF0;
+  --cta-label-green: #7BB935;
+  /* Disabled secondary label (3b, Sept 11): the disabled CONTINUE's label,
+     read by Jamie off her NATIVE Start_Course_Flow_2. The container copy
+     read #53646C (3 levels high in red, identical in G/B). Used only by
+     the disabled WITH A FRIEND label; the disabled CONTINUE itself is the
+     plate's own pixels.
+     The container shift is NOT uniform across dark neutrals: --text-secondary
+     moved 13 levels, --nav-divider 5, this one 3. "Container darks read
+     high" is a tendency, not a constant: each new one is read natively,
+     never corrected by formula. COLOUR IS CLOSED (again): this was the last
+     new value. */
+  --cta-label-disabled: #56646C;
+
+  /* ---------- Radii ---------- */
+  --radius-node:   50%;    /* nodes are ellipses, not circles: the face
+                              measures 68 x 54, i.e. squashed ~0.8     */
+  --radius-tile:   12px;   /* locked/timer tile                    [±] */
+  --radius-button: 12px;   /* REVIEW / LEGENDARY / NUDGE / GIFT    [±] */
+  --radius-card:   18px;   /* unit banner, popup card, illustration
+                              plate — all measured at 34 image px   [±] */
+  --radius-pill:   999px;  /* progress bars */
+
+  /* ---------- Elevation ----------
+     There are NO blurred drop shadows anywhere in these three screens.
+     Sampling directly below a node goes from edge colour to page
+     background within ~2px of antialiasing. All depth is the solid
+     offset bottom edge below. Do not add box-shadow. */
+  --edge-node:   8px;   /* measured 16-17 image px under both the blue
+                           and green path nodes                       */
+  --edge-button: 4px;   /* LEGENDARY 8 image px, REVIEW 9 image px    */
+  --edge-banner: 4px;   /* unit banner, 7 image px                    */
+  --edge-tile:   4px;   /* locked/timer tile                      [±] */
+
+  /* ---------- Geometry actually measured (for Step 3) ---------- */
+  --node-width:      68px;   /* ellipse face */
+  --node-height:     54px;
+  --banner-width:   341px;   /* = screen width minus 2 x 26px gutter   */
+  --banner-height:   71px;   /* face only, + 4px edge                  */
+  --gutter:          26px;
+  --progress-height: 19px;
+  --button-height:   42px;   /* REVIEW/LEGENDARY face                  */
+  --button-height-secondary: 44px; /* NUDGE/GIFT outlined              */
+}
+
+/* ============================================================
+   DISPLAY P3 OVERRIDES  — verified on a wide-gamut display
+
+   COLOUR IS CLOSED (Sept 10). The six neutrals and --streak-lit were
+   read off native reference captures and converted to P3. Container
+   copies are colour-shifted by an unknown mechanism: never convert them
+   back by formula, and never let a container measurement override these.
+   The 50% dim stays rgba(0,0,0,0.5) — a real composite (half of #151F23
+   = (10,15,17), measured (10,15,17)), kept as alpha so it works over the
+   purple Quests header. Verification renders may override
+   --surface-page to #171E26 for seam-free comparison; never commit that.
+
+   The reference screenshots are iPhone captures, which macOS
+   tags Display P3, so every value in this file is a P3 number.
+   Declared as CSS hex they are read as sRGB and converted on
+   the way to the screen, landing somewhere else: #78C93C came
+   out as #8BC753 while the identical green baked into a
+   cropped asset came out unconverted.
+
+   Declaring the same numbers as P3 makes CSS fills and cropped
+   artwork agree. Measured after this change: CSS green and
+   asset green both render #78C93C — a zero-delta match.
+   On an sRGB display both get converted the same way, so it
+   holds there too. Hex above is the fallback for browsers
+   without color().
+   ============================================================ */
+
+@supports (color: color(display-p3 1 1 1)) {
+  :root {
+    --surface-page: color(display-p3 0.0824 0.1216 0.1373);
+    --surface-raised: color(display-p3 0.1373 0.1804 0.2078);
+    --surface-illustration: color(display-p3 0.1333 0.2627 0.3373);
+    --border-subtle: color(display-p3 0.2275 0.2706 0.3059);
+    --nav-border: color(display-p3 0.1686 0.2118 0.2353);
+    --nav-divider: color(display-p3 0.1725 0.2157 0.2353);
+    --ring-review: color(display-p3 0.1843 0.2275 0.2549);
+    --blue-pale-face: color(display-p3 0.5922 0.8353 0.9804);
+    --ring-filled-blue: color(display-p3 0.2196 0.4549 0.5922);
+    --ring-filled-green: color(display-p3 0.3098 0.5294 0.1490);
+    --ring-filled-gold: color(display-p3 0.6314 0.5294 0.1686);
+    --ring-filled-blue-pale: color(display-p3 0.3882 0.5608 0.6196);
+    --streak-lit: color(display-p3 0.9255 0.3961 0.3020);
+    --blue-face: color(display-p3 0.3333 0.6745 0.9373);
+    --blue-edge: color(display-p3 0.2471 0.5451 0.7608);
+    --blue-gloss: color(display-p3 0.4902 0.7725 0.9608);
+    --green-face: color(display-p3 0.4706 0.7882 0.2353);
+    --green-edge: color(display-p3 0.3686 0.6392 0.1804);
+    --green-gloss: color(display-p3 0.5882 0.8627 0.3333);
+    --gold-face: color(display-p3 0.9608 0.7882 0.2667);
+    --gold-edge: color(display-p3 0.8784 0.6510 0.2314);
+    --indigo-face: color(display-p3 0.2824 0.4431 0.9451);
+    --indigo-edge: color(display-p3 0.2471 0.3608 0.7686);
+    --purple-face: color(display-p3 0.5373 0.4157 0.7804);
+    --purple-edge: color(display-p3 0.4314 0.3333 0.6275);
+    --red-face: color(display-p3 0.8627 0.3765 0.3686);
+    --red-edge: color(display-p3 0.6941 0.3020 0.2941);
+    --white-face: color(display-p3 1.0000 1.0000 1.0000);
+    --text-primary: color(display-p3 1.0000 1.0000 1.0000);
+    --text-secondary: color(display-p3 0.4667 0.5059 0.5333);
+    --text-muted: color(display-p3 0.3569 0.4000 0.4275);
+    --text-link: color(display-p3 0.3333 0.6745 0.9373);
+    --cta-label-blue: color(display-p3 0.4275 0.7412 0.9412);
+    --cta-label-green: color(display-p3 0.4824 0.7255 0.2078);
+    --cta-label-disabled: color(display-p3 0.3373 0.3922 0.4235);
+    --white-edge: color(display-p3 1 1 1 / 0.74);
+    --text-on-banner: color(display-p3 1 1 1 / 0.7);
+  }
+}

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Course Buddies — prototype</title>
+<!--
+  PHONE-FRAME SHELL (Sept 15). Embeds prototype.html, untouched, in an
+  iframe at exactly 393 x 852 inside a phone bezel. The prototype stays a
+  standalone file; this shell never scripts into it.
+
+    scaling     transform: scale(n) on the phone (bezel and all), never by
+                resizing the iframe — a resize would change the prototype's
+                viewport and could reflow it; a transform can't.
+                n = min(1, availableHeight / 852), recomputed on resize;
+                never above 1 (3x assets soften when upscaled).
+    fullscreen  requestFullscreen on the page container: the browser chrome
+                and the page furniture go, the phone — bezel included —
+                stays exactly as it is under the same scale rule; Escape or
+                the control exits and the framed view is restored.
+    < 420px     someone's own phone: the bezel drops and the iframe fills the
+                viewport edge to edge at scale 1. Separate from fullscreen.
+    deployment  every path relative (served from a subpath, or file://);
+                static, no build, no dependencies, nothing fetched from a
+                network by this file. Layout: index.html and prototype.html
+                side by side, assets/ beside them (the prototype's own
+                relative references).
+
+  The dynamic-island cutout is drawn shallow (top 8, 24 tall) so it clears
+  the scenario picker's label, which sits at y 37-53 at the top centre of
+  the prototype; a full-height island (11-48) would cover it.
+-->
+<style>
+  html, body { margin: 0; height: 100%; background: #F7F7F5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  /* the control sits 28 below the bezel's bottom edge (the bezel overflows the
+     phone box by 14, so the flex gap is 42): a separate control, not something
+     attached to the device; the phone centres in what's left */
+  #stage { position: fixed; inset: 0; background: #F7F7F5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 42px; overflow: hidden; }
+  #stage:fullscreen { background: #F7F7F5; }
+
+  /* the slot takes the SCALED size so the flex column centres the phone and
+     the control as a unit; the phone itself keeps its 393 x 852 layout box
+     and is scaled with a transform about its centre */
+  #slot { position: relative; flex: none; width: 393px; height: 852px; }
+  #phone { position: absolute; left: 50%; top: 50%; width: 393px; height: 852px; margin: -426px 0 0 -196.5px; transform-origin: center; }
+  .bezel { position: absolute; inset: -14px; border-radius: 56px; background: #1C1C1E;
+           box-shadow: 0 30px 70px rgba(0, 0, 0, 0.30), 0 8px 22px rgba(0, 0, 0, 0.18), inset 0 0 0 2px #2A2A2D; }
+  .bezel::before { content: ""; position: absolute; left: -3px; top: 150px; width: 3px; height: 34px; border-radius: 2px 0 0 2px; background: #2A2A2D; box-shadow: 0 64px 0 #2A2A2D, 0 124px 0 #2A2A2D; }
+  .bezel::after  { content: ""; position: absolute; right: -3px; top: 210px; width: 3px; height: 70px; border-radius: 0 2px 2px 0; background: #2A2A2D; }
+  .screen { position: absolute; inset: 0; border-radius: 42px; overflow: hidden; background: #0D1116; }
+  .screen iframe { display: block; width: 393px; height: 852px; border: 0; overflow: hidden; background: #0D1116; }
+  .island { position: absolute; left: 50%; top: 8px; width: 112px; height: 24px; margin-left: -56px; border-radius: 12px; background: #000; pointer-events: none; z-index: 2; }
+
+  #controls { flex: none; display: flex; gap: 10px; align-items: center; }
+  #controls button { appearance: none; border: 1.5px solid #D6D6D2; background: #FFFFFF; color: #333; font: 600 13px/1 inherit; letter-spacing: 0.2px; padding: 10px 16px; border-radius: 999px; cursor: pointer; }
+  #controls button:hover { border-color: #BDBDB8; }
+  #stage:fullscreen #enter { display: none; }
+  #exit { display: none; }
+  #stage:fullscreen #exit { display: inline-block; }
+
+  /* someone's own phone: no frame inside a phone. The iframe fills the
+     viewport edge to edge at scale 1; the prototype's own fit handles the
+     rest. Fullscreen doesn't apply here. */
+  @media (max-width: 419.98px) {
+    #stage { display: block; }
+    #slot { width: 100%; height: 100%; }
+    #phone { position: fixed; inset: 0; width: 100%; height: 100%; margin: 0; transform: none !important; }
+    .bezel, .island, #controls { display: none; }
+    .screen { border-radius: 0; }
+    .screen iframe { width: 100%; height: 100%; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="slot"><div id="phone">
+    <div class="bezel"></div>
+    <div class="screen"><div class="island"></div><iframe src="prototype.html" title="Course Buddies prototype" scrolling="no"></iframe></div>
+  </div></div>
+  <div id="controls"><button id="enter" type="button">View Fullscreen</button><button id="exit" type="button">Exit Fullscreen</button></div>
+</div>
+<script>
+  (function () {
+    const stage = document.getElementById("stage"), slot = document.getElementById("slot"), phone = document.getElementById("phone"), controls = document.getElementById("controls");
+    const FRAME = 14, GAP = 42, MARGIN = 24;
+    const own = window.matchMedia("(max-width: 419.98px)");
+
+    function fit() {
+      if (own.matches) { slot.style.width = slot.style.height = ""; phone.style.transform = ""; return; }
+      /* the height the phone can have: the viewport minus the bezel's overflow, the gap, the control row and margins */
+      const available = window.innerHeight - 2 * FRAME - GAP - controls.offsetHeight - 2 * MARGIN;
+      const n = Math.max(0.2, Math.min(1, available / 852));
+      phone.style.transform = `scale(${n})`;
+      slot.style.width = (393 * n) + "px"; slot.style.height = (852 * n) + "px";
+    }
+    window.addEventListener("resize", fit);
+    document.addEventListener("fullscreenchange", fit);
+    own.addEventListener ? own.addEventListener("change", fit) : own.addListener(fit);
+
+    document.getElementById("enter").onclick = () => { if (stage.requestFullscreen) stage.requestFullscreen(); else if (stage.webkitRequestFullscreen) stage.webkitRequestFullscreen(); };
+    document.getElementById("exit").onclick = () => { if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); };
+    fit();
+  })();
+</script>
+</body>
+</html>

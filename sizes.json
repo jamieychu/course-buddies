@@ -1,0 +1,74 @@
+{
+ "course-flag-upper-nav-icon": [
+  29.3,
+  24.0
+ ],
+ "streak-upper-nav-icon": [
+  18.7,
+  23.3
+ ],
+ "gem-upper-nav-icon": [
+  21.3,
+  26.7
+ ],
+ "energy-upper-nav-icon": [
+  28.0,
+  18.7
+ ],
+ "course-guidebook-icon": [
+  25.7,
+  26.7
+ ],
+ "block-app-tile-in-progress": [
+  64.0,
+  74.7
+ ],
+ "start-course-icon-in-progress": [
+  88.0,
+  80.0
+ ],
+ "star-course-icon-incomplete": [
+  71.0,
+  65.3
+ ],
+ "video-course-icon-incomplete": [
+  72.0,
+  66.7
+ ],
+ "course-chest-unopened": [
+  72.0,
+  61.3
+ ],
+ "trophy-course-icon-incomplete": [
+  71.0,
+  65.3
+ ],
+ "rapid-review-duo-1-locked": [
+  80.0,
+  125.3
+ ],
+ "course-nav-icon-selected": [
+  46.7,
+  46.7
+ ],
+ "quest-nav-icon-unselected": [
+  26.7,
+  26.7
+ ],
+ "leaderboard-nav-icon-unselected": [
+  28.0,
+  27.0
+ ],
+ "feed-nav-icon-unselected": [
+  28.0,
+  28.0
+ ],
+ "subscription-nav-icon-unselected": [
+  32.0,
+  26.7
+ ],
+ "profile-nav-icon-unselected": [
+  28.0,
+  28.0
+ ]
+}
