@@ -2261,27 +2261,36 @@ document.querySelector("#status .notnow").onclick = e => { e.stopPropagation(); 
    suggestion list, scores as the secondary line, sorted by proximity to
    Jamie's score; one already-paired row. Avatars other than Otis's are
    PLACEHOLDERS (initials). */
-/* Five rows (Jamie, Sept 15). Otis's Japanese score differs by preset: A —
-   none (Jamie just added the course; neither has any), B — 5. Everyone
-   else is the same in both. SORT RULE (Jamie, Sept 15): (1) people
-   learning Japanese who can be invited, by closeness to Jamie's own
-   score; (2) people not learning Japanese; (3) already-paired rows,
-   greyed, last. Otis is first in both presets by distance 0 (A: 0 vs 0;
-   B: 10 vs 10 — David 16 and Alexandra 18 are further along), so the fork
-   popup anchors below every other row without covering his. No score
-   under 5 anywhere. */
+/* Five rows (Jamie, Sept 15). Otis differs by preset: A — no Japanese at
+   all (Jamie just added the course; a score can't be 0, everyone starts
+   at 5), Italian 5; B — Japanese 10, equal to Jamie's. Everyone else is
+   the same in both. SORT RULE (Jamie, Sept 15, with the tiebreak):
+     - when Jamie has no Japanese (A): people with NO Japanese rank above
+       people with Japanese — they're the ones at her level in this
+       course — in FIXTURE ORDER (never by progress in other languages:
+       ranking people by how little they've learned isn't a signal a
+       product would surface); then people with Japanese by closeness to
+       her (nothing -> ascending); paired rows greyed, last.
+       A: Otis (Italian 5), Sabrina (Spanish 8), David 16, Alexandra 18, Angel.
+     - when she has (B): Japanese learners by closeness to her score, then
+       non-Japanese, then paired. B: Otis 10, David 16, Alexandra 18,
+       Sabrina, Angel.
+   Otis is first in both, so the fork popup anchors below every other row
+   without covering his. No score under 5 anywhere. */
 const FRIENDS = [
-  { key: "otis", name: "Otis TM", scores: { japanese: 10 }, scoresA: { japanese: 0 }, avatar: "otis-mini-circle-avatar" },   // B: 10, equal to Jamie's — a unit apart in position, not half a score apart; A: 0 (neither has any)
+  { key: "otis", name: "Otis TM", scores: { japanese: 10 }, scoresA: { italian: 5 }, avatar: "otis-mini-circle-avatar" },   // B: 10, equal to Jamie's — a unit apart in position, not half a score apart; A: no Japanese at all (a score can't be 0; everyone starts at 5) — Italian 5
   { key: "david", name: "David", scores: { japanese: 16, spanish: 12 } }, { key: "alexandra", name: "Alexandra", scores: { japanese: 18 } },   // above Jamie's 10 rather than below Otis's 5 (Jamie, Sept 15): no score under 5, and Otis stays first (distances 5 / 6 / 8)
-  { key: "angel", name: "Angel", scores: { japanese: 7 }, paired: true }, { key: "sabrina", name: "Sabrina", scores: { spanish: 9 } },
+  { key: "angel", name: "Angel", scores: { japanese: 7 }, paired: true }, { key: "sabrina", name: "Sabrina", scores: { spanish: 8 } },
 ];
 const FLAG = { japanese: "course-flag-upper-nav-icon", spanish: "spanish-course-flag-icon", korean: "kr-course-flag-upper-nav-icon", italian: "italy-course-flag-icon" };
 function renderFriends() {
   const el = document.getElementById("friends"), open = SCENARIO.overlay === "friends" || SCENARIO.overlay === "startpoint";   // the start-point sheet sits OVER friend selection
   el.classList.toggle("open", open); if (!open) return;
-  const mine = SCENARIO.courses.japanese.enrolled ? (SCENARIO.courses.japanese.score || 0) : 0;
+  const hasJa = !!SCENARIO.courses.japanese.enrolled, mine = hasJa ? (SCENARIO.courses.japanese.score || 5) : null;
   const sc = f => (SCENARIO.id === "A" && f.scoresA) ? f.scoresA : f.scores;
-  const key = f => f.paired ? [2, 0] : sc(f).japanese === undefined ? [1, 0] : [0, Math.abs(sc(f).japanese - mine)];   // (1) invitable Japanese learners by proximity, (2) non-Japanese, (3) paired rows greyed LAST — so Otis is first in both presets and the fork popups anchor below every other row
+  /* tiers: paired last; then, when Jamie has no Japanese, the no-Japanese rows first (fixture order) and the Japanese rows ascending;
+     when she has, the Japanese rows by proximity and the no-Japanese rows after. A stable sort keeps fixture order inside a tier. */
+  const key = f => f.paired ? [2, 0] : sc(f).japanese === undefined ? [hasJa ? 1 : 0, 0] : [hasJa ? 0 : 1, hasJa ? Math.abs(sc(f).japanese - mine) : sc(f).japanese];
   const rows = [...FRIENDS].sort((a, b) => { const [x, y] = key(a), [p, q] = key(b); return x - p || y - q; });
   const otisIdx = rows.findIndex(f => f.key === "otis"), pending = SCENARIO.invitePending;
   const flags = f => Object.entries(sc(f)).map(([c, n]) => `<span class="f"><img srcset="assets/${FLAG[c]}.png 3x" alt="">${n}</span>`).join("");

@@ -759,7 +759,7 @@ def feed_to_path(a, pg):
     pg.evaluate("()=>applyPreset('A2')"); pg.wait_for_timeout(200); out["solo_feed_not_live"] = int(pg.evaluate("()=>document.querySelector('#nav img[data-slot=\"nav3\"]').style.cursor!=='pointer'"))
     pg.evaluate("()=>{applyPreset('B7'); const c=JSON.parse(JSON.stringify(SCENARIO.courses)); c.japanese.score=6; setState({courses:c})}"); pg.wait_for_timeout(200)
     out["B_feed_never_live"] = int(pg.evaluate("()=>document.querySelector('#nav img[data-slot=\"nav3\"]').style.cursor!=='pointer'"))   # the feed carries Path A's post
-    out["no_score_under_5"] = int(pg.evaluate("()=>FRIENDS.every(f=>Object.values(f.scores).every(v=>v>=5))"))   # the fixture floor (Otis's 0 in A is the no-progress case, scoresA)
+    out["no_score_under_5"] = int(pg.evaluate("()=>FRIENDS.every(f=>Object.values(f.scores).concat(Object.values(f.scoresA||{})).every(v=>v>=5))"))   # a course score can't be 0; everyone starts at 5 — scoresA included
     return out
 
 
@@ -944,10 +944,13 @@ def invite_flow(a, pg):
     rows = pg.evaluate(rows_q)
     out["friends_open"] = int(d["open"] and d["top"]); out["friends_dark"] = int(dark("#friends")); out["title_ok"] = int(d["title"] == "Who do you want to learn with?"); out["course_flag"] = int(d["course"] == "Japanese" and d["flag"] > 0)
     out["no_counter"] = int(d["counter"] == 0); out["list_above_options"] = d["above"]; out["cta_off_before"] = d["cta"]; out["rows_5"] = int(len(rows) == 5); out["row_h"] = rows[0]["h"]
-    out["A_otis_first_at_0"] = int(rows[0]["k"] == "otis" and rows[0]["ja"] == 0)
+    fl0 = pg.evaluate("()=>[...document.querySelectorAll('#friends .row')].map(r=>[r.dataset.k, [...r.querySelectorAll('.sc .f')].map(f=>f.querySelector('img').getAttribute('srcset')+'|'+f.textContent)])")
+    out["A_order"] = int([r[0] for r in fl0] == ["otis", "sabrina", "david", "alexandra", "angel"])
+    out["A_otis_italian_5_no_japanese"] = int(rows[0]["k"] == "otis" and rows[0]["ja"] is None and fl0[0][1] == ["assets/italy-course-flag-icon.png 3x|5"])
+    out["A_sabrina_spanish_8"] = int(fl0[1][1] == ["assets/spanish-course-flag-icon.png 3x|8"])
     live = [r for r in rows if not r["paired"]]; ja = [r["ja"] for r in live]; nonja = [i for i, v in enumerate(ja) if v is None]
-    out["non_japanese_after_japanese"] = int(nonja == list(range(len(ja) - len(nonja), len(ja))) and len(nonja) >= 1)
-    withja = [v for v in ja if v is not None]; out["A_sorted"] = int(withja == sorted(withja, key=lambda v: abs(v - 0)))
+    out["A_non_japanese_first"] = int(nonja == list(range(len(nonja))) and len(nonja) == 2)   # Jamie has none: the no-Japanese rows rank first, in fixture order
+    withja = [v for v in ja if v is not None]; out["A_japanese_ascending"] = int(withja == sorted(withja) and withja == [16, 18])
     out["flags_not_words"] = int(all(r["nflags"] > 0 or r["paired"] for r in rows)); out["pills_equal"] = int(len(set(round(r["pillW"], 1) for r in rows)) == 1)
     pr = [r for r in rows if r["paired"]]; out["paired_greyed_last"] = int(len(pr) == 1 and "off" in pr[0]["pill"] and rows[-1]["paired"])
     ft = pg.evaluate("()=>{const f=document.getElementById('friends'); return {h:f.querySelector('.fh').textContent, tiles:[...f.querySelectorAll('.ftile')].map(t=>Math.round(t.getBoundingClientRect().height)), crop:!!f.querySelector('.finding img[srcset*=\"friend-finding-options\"]'), icon:f.querySelector('.ftile[data-k=\"contacts\"] img').naturalWidth}}")
@@ -1156,7 +1159,7 @@ CHECKS = [
       "s4_centred": (1, 0), "notnow_to_path": (1, 0), "sendback_to_typesel": (1, 0)}),
     ("type cells, all eight", "A13", None, type_cells, {"bad_cells": (0, 0), "cells_checked": (40, 0)}),
     ("A4-A6 / B3-B5 invite flow", "A0", None, invite_flow, {"friends_open": (1, 0), "friends_dark": (1, 0), "title_ok": (1, 0), "course_flag": (1, 0), "no_counter": (1, 0), "list_above_options": (1, 0), "cta_off_before": (1, 0),
-      "rows_5": (1, 0), "row_h": (74.7, 0.5), "A_otis_first_at_0": (1, 0), "non_japanese_after_japanese": (1, 0), "A_sorted": (1, 0), "flags_not_words": (1, 0), "pills_equal": (1, 0), "paired_greyed_last": (1, 0), "finding_css": (1, 0), "contacts_no_fill": (1, 0),
+      "rows_5": (1, 0), "row_h": (74.7, 0.5), "A_order": (1, 0), "A_otis_italian_5_no_japanese": (1, 0), "A_sabrina_spanish_8": (1, 0), "A_non_japanese_first": (1, 0), "A_japanese_ascending": (1, 0), "flags_not_words": (1, 0), "pills_equal": (1, 0), "paired_greyed_last": (1, 0), "finding_css": (1, 0), "contacts_no_fill": (1, 0),
       "fork_below_never_covers_otis": (1, 0), "pending_state": (1, 0), "A_continue_to_path": (1, 0), "A_acceptance_arrives": (1, 0), "accepted_A_copy": (1, 0), "sub_below_pair": (1, 0), "accepted_order": (1, 0),
       "accepted_dark": (1, 0), "pair_264": (1, 0), "no_x_no_sim": (1, 0), "cta_continue": (1, 0), "continue_to_A7": (1, 0),
       "B_from_menu": (1, 0), "B_otis_first_at_10": (1, 0), "B_sorted": (1, 0), "B_invite_opens_sheet": (1, 0), "sheet_bottom_packed": (1, 0), "sheet_order": (1, 0), "shared_preselected_named": (1, 0),
