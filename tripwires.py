@@ -62,8 +62,10 @@ yellow = lambda a: (a[..., 0] > 200) & (a[..., 1] > 150) & (a[..., 2] < 120)
 
 
 def feed_plate(a, pg):
-    """Dani's flame, baked in the feed plate: catches a plate at the wrong scale/offset."""
-    b = largest(yellow(a), 420, 535, 270, 370)
+    """Plate scale/offset probe. Was Dani's flame in the second post; that post
+    is under the Course Buddies promo now (Turn 2), so the probe is the first
+    post's flag field — the same baked plate, still fully visible."""
+    b = largest((a > 200).all(2), 143, 190, 262, 332)
     return {"cx": (b[0] + b[2]) / 2, "cy": (b[1] + b[3]) / 2} if b else {}
 
 
@@ -702,6 +704,132 @@ def walk_B(a, pg):
     return out
 
 
+def profile_turn1(a, pg):
+    """Portfolio round, turn 1: the profile page reachable from the nav tab
+    from beat 1 in both paths; STREAK and COURSE SCORE live, LEAGUE/XP
+    static; COURSE BUDDIES below Friend Streaks in three states with one
+    badge corner (pending mark or course flag, never both); the manage page
+    (list, EDIT/DONE, remove clears the pair); course selection single-CTA
+    from the profile side, both CTAs from the menu; origins carried in
+    state for every back route; the four out-of-scope strings unmarked."""
+    out = {}; q = lambda js: pg.evaluate("()=>(" + js + ")")
+    def c(sel):   # the profile scrolls: bring the target into view before the tap
+        pg.evaluate("(sel)=>{const e=document.querySelector(sel); if(e) e.scrollIntoView({block:'center'})}", sel); pg.wait_for_timeout(120); _walk_click(pg, sel, 250)
+    for pre, key in (("A0", "A"), ("B2", "B")):
+        pg.evaluate(f"()=>applyPreset('{pre}')"); pg.wait_for_timeout(200); c('#nav img[data-slot="nav5"]')
+        out[f"{key}_tab_opens_sheet"] = int(q("SCENARIO.overlay==='profnav' && document.elementFromPoint(196,500).closest('#profnav')!==null && document.querySelector('#profnav .sheet img').naturalWidth>0"))
+        c('#profnav .prow[data-k="kana"]'); out[f"{key}_sheet_fork_clears_profile_row"] = int(q("(()=>{const o=document.getElementById('oos').getBoundingClientRect(); const pr=document.querySelector('#profnav .prow[data-k=\"profile\"]').getBoundingClientRect(); return document.getElementById('oos').classList.contains('open') && (o.bottom<=pr.top||o.top>=pr.bottom)})()"))
+        c('#profnav .prow[data-k="profile"]'); out[f"{key}_profile_from_beat1"] = int(q("SCENARIO.activeTab==='profile' && SCENARIO.overlay==='none' && document.elementFromPoint(196,300).closest('#profile')!==null"))
+    out["B_courses_japanese_only"] = int(q("[...document.querySelectorAll('#profile .courses img')].map(i=>i.getAttribute('srcset').includes('kr')?'KR':'JA').join()==='JA' && document.querySelector('#profile .live.score img').getAttribute('srcset').includes('course-flag-upper') && document.querySelector('#profile .live.score .v').textContent==='10'"))
+    pg.evaluate("()=>applyPreset('A0')"); pg.evaluate("()=>setState({activeTab:'profile'})"); pg.wait_for_timeout(200)
+    out["A0_courses_korean_score_kr10"] = int(q("[...document.querySelectorAll('#profile .courses img')].map(i=>i.getAttribute('srcset').includes('kr')?'KR':'JA').join()==='KR' && document.querySelector('#profile .live.score img').getAttribute('srcset').includes('kr') && document.querySelector('#profile .live.score .v').textContent==='10'"))
+    fl = q("(()=>{const i=document.querySelector('#profile .live.score img'); const r=i.getBoundingClientRect(); const bx=document.querySelector('#profile .live.score').getBoundingClientRect(); return r.width>0 && r.top>=bx.top && r.bottom<=bx.bottom})()"); out["score_flag_visible_in_box"] = int(fl)
+    out["otis_covered_in_friend_streaks"] = int(q("(()=>{const i=document.querySelector('#profile .fsslot img'); const s=i.getBoundingClientRect(); return i.naturalWidth>0 && Math.abs(s.left+30-125)<1})()"))
+    pg.evaluate("()=>setState({invitePending:'otis'})"); pg.wait_for_timeout(150)
+    out["A_after_invite_courses_both_score_ja5"] = int(q("[...document.querySelectorAll('#profile .courses img')].map(i=>i.getAttribute('srcset').includes('kr')?'KR':'JA').join()==='KR,JA' && document.querySelector('#profile .live.score img').getAttribute('srcset').includes('course-flag-upper') && document.querySelector('#profile .live.score .v').textContent==='5'"))
+    pg.evaluate("()=>applyPreset('A21')"); pg.evaluate("()=>setState({activeTab:'profile', overlay:'none'})"); pg.wait_for_timeout(150); out["A_score6_after_milestone"] = int(q("document.querySelector('#profile .live.score .v').textContent==='6'"))
+    pg.evaluate("()=>applyPreset('A0')"); pg.evaluate("()=>setState({activeTab:'profile'})"); pg.wait_for_timeout(200)
+    out["live_stats"] = int(q("document.querySelector('#profile .live.streak .v').textContent==='1 day' && document.querySelector('#profile .live.score .v').textContent==='10' && document.querySelector('#profile .live.score img').naturalWidth>0"))
+    out["league_xp_static"] = int(q("!document.querySelector('#profile .live.league') && !document.querySelector('#profile .live.xp')"))
+    out["section_below_friend_streaks"] = int(q("document.querySelector('#profile .buddies').offsetTop > document.querySelector('#profile .plate.b').offsetTop && document.querySelector('#profile .buddies').offsetTop < document.querySelector('#profile .plate.c').offsetTop"))
+    out["no_pair_five_placeholders"] = int(q("document.querySelectorAll('#profile .slot.empty').length===5 && !document.querySelector('#profile .slot.occ')"))
+    slots = q("[...document.querySelectorAll('#profile .slot')].map(s=>s.getBoundingClientRect().left+26)"); out["slot_pitch"] = int(all(abs(a - b) < 1 for a, b in zip(slots, [53, 125, 196, 268, 339])))   # the captured circles' centres
+    g = q("(()=>{const r=s=>document.querySelector(s).getBoundingClientRect(); return {hdrL:r('#profile .buddies .sh > span').left, manL:r('#profile .manage').left, manR:r('#profile .manage').right, manSrc:document.querySelector('#profile .manage').getAttribute('srcset'), ph:document.querySelector('#profile .slot.empty img')?.getAttribute('srcset'), phW:r('#profile .slot.empty img').width, fs:document.querySelector('#profile .fsslot img')?.getAttribute('srcset'), fsL:r('#profile .fsslot img').left+30, fsT:r('#profile .fsslot img').top+30}})()")
+    out["header_at_24"] = int(abs(g["hdrL"] - 24) < 0.5); out["manage_crop_at_captured_box"] = int("manage-label" in g["manSrc"] and abs(g["manL"] - 301) < 0.5 and abs(g["manR"] - 367) < 1)
+    out["placeholders_one_crop"] = int(g["ph"] and "friend-streak-placeholder" in g["ph"] and g["fs"] == g["ph"] and abs(g["phW"] - 60) < 0.5)
+    out["otis_cover_on_ink_centre"] = int(abs(g["fsL"] - 125) < 1 and abs(g["fsT"] - (317 - 124 + q("document.querySelector('#profile .plate.b').getBoundingClientRect().top"))) < 1)
+    c("#profile .slot.empty"); out["plus_to_single_cta"] = int(q("SCENARIO.overlay==='courseSelection' && SCENARIO.courseSelFrom==='profile' && document.getElementById('coursesel').classList.contains('single') && getComputedStyle(document.querySelector('#coursesel .pri-art')).display==='none' && getComputedStyle(document.querySelector('#coursesel .grp')).display==='none' && getComputedStyle(document.querySelector('#coursesel .wfpri')).display==='block'"))
+    c("#coursesel .hit"); out["single_cta_stays_filled_after_select"] = int(q("getComputedStyle(document.querySelector('#coursesel .wfpri')).display==='block' && getComputedStyle(document.querySelector('#coursesel .pri-art')).display==='none' && /0\\.4706|120, 201/.test(getComputedStyle(document.querySelector('#coursesel .wfpri')).backgroundColor)"))
+    pg.evaluate("()=>dismissCourseSelection()"); pg.wait_for_timeout(150); out["x_back_to_profile"] = int(q("SCENARIO.overlay==='none' && SCENARIO.activeTab==='profile'"))
+    pg.evaluate("()=>applyPreset('A4')"); pg.evaluate("()=>setState({invitePending:'otis', overlay:'none', activeTab:'profile'})"); pg.wait_for_timeout(200)
+    out["pending_slot_mark_no_flag"] = int(q("document.querySelector('#profile .slot.pending img').naturalWidth>0 && !document.querySelector('#profile .slot.pending .flag') && document.querySelectorAll('#profile .slot.empty').length===4"))
+    c("#profile .slot.pending"); out["pending_to_manage"] = int(q("SCENARIO.overlay==='manage' && document.querySelector('#manage .row.otis .st').textContent==='Request pending' && document.querySelectorAll('#manage .row.invite').length===4"))
+    m = q("({title:document.querySelector('#manage .hdr .title').textContent, sec:document.querySelector('#manage .sec .t').textContent, hero:document.querySelector('#manage .hdr .mbanner').naturalWidth, rows:[...document.querySelectorAll('#manage .row.invite .nm')].map(r=>r.textContent), edit:document.querySelector('#manage .edit').textContent})")
+    out["manage_structure"] = int(m["title"] == "Course Buddies" and m["sec"] == "Your buddies" and m["hero"] > 0 and all(r == "Invite a buddy" for r in m["rows"]) and m["edit"] == "Edit")
+    out["banner_one_asset"] = int(q("document.querySelector('#manage .hdr .mbanner').getAttribute('srcset').includes('buddy-invite-header-wo-nav') && !document.querySelector('#manage .hero') && document.querySelector('#manage .hdr').getBoundingClientRect().height>=240"))
+    c("#manage .edit"); out["edit_to_done_remove"] = int(q("document.querySelector('#manage .edit').textContent==='Done' && getComputedStyle(document.querySelector('#manage .row.otis .rm')).display==='flex'"))
+    c("#manage .row.otis .rm"); out["remove_is_fork"] = int(q("document.getElementById('oos').classList.contains('open') && document.querySelector('#oos .msg').textContent==='Not in this demo — removing a buddy keeps your progress' && SCENARIO.invitePending==='otis' && !!document.querySelector('#manage .row.otis')")); pg.mouse.click(200, 100); pg.wait_for_timeout(100)
+    pg.evaluate("()=>setState({invitePending:null, manageEdit:false})"); pg.wait_for_timeout(150); out["edit_hidden_when_empty"] = int(q("getComputedStyle(document.querySelector('#manage .edit')).display==='none' && document.querySelectorAll('#manage .row.invite').length===5"))
+    c("#manage .row.invite"); out["invite_row_to_single_cta"] = int(q("SCENARIO.overlay==='courseSelection' && SCENARIO.courseSelFrom==='manage' && document.getElementById('coursesel').classList.contains('single')"))
+    c("#coursesel .hit"); c("#coursesel .hit.wf"); c("#friends .back"); out["friends_back_keeps_origin"] = int(q("SCENARIO.overlay==='courseSelection' && SCENARIO.courseSelFrom==='manage'"))
+    pg.evaluate("()=>dismissCourseSelection()"); pg.wait_for_timeout(150); out["x_back_to_manage"] = int(q("SCENARIO.overlay==='manage'"))
+    c("#manage .qx"); out["manage_x_to_profile"] = int(q("SCENARIO.overlay==='none' && SCENARIO.activeTab==='profile'"))
+    pg.evaluate("()=>applyPreset('A7')"); pg.evaluate("()=>setState({activeTab:'profile'})"); pg.wait_for_timeout(200)
+    out["paired_slot_flag_no_mark"] = int(q("document.querySelector('#profile .slot.paired .flag img').naturalWidth>0 && !document.querySelector('#profile .slot.paired img.pend')"))
+    c("#profile .slot.paired"); out["paired_to_colearning"] = int(q("SCENARIO.overlay==='colearning'")); c("#colearn .qx")
+    c("#profile .manage"); out["manage_link"] = int(q("SCENARIO.overlay==='manage' && document.querySelector('#manage .row.otis .st').textContent==='Learning Japanese together'")); c("#manage .qx")
+    c('#nav img[data-slot="nav0"]'); out["course_tab_back"] = int(q("SCENARIO.activeTab==='course'"))
+    pg.evaluate("()=>applyPreset('A0')"); pg.wait_for_timeout(150); c("#stat-course img"); c('#menu-art img[data-slot="add-course-menu-icon"]')
+    out["menu_keeps_both_ctas"] = int(q("SCENARIO.courseSelFrom==='courseMenu' && !document.getElementById('coursesel').classList.contains('single')"))
+    pg.evaluate("()=>dismissCourseSelection()"); pg.wait_for_timeout(150); out["x_back_to_menu"] = int(q("SCENARIO.overlay==='courseMenu'"))
+    # completing the flow from the profile origin still exits to the path
+    pg.evaluate("()=>applyPreset('A0')"); pg.evaluate("()=>setState({activeTab:'profile'})"); pg.wait_for_timeout(150); c("#profile .slot.empty"); c("#coursesel .hit"); c("#coursesel .wfpri"); c('#friends .row[data-k="otis"] .pill'); c("#friends .bcta")   # from the profile the single filled CTA is the way in
+    out["complete_exits_to_path"] = int(q("SCENARIO.overlay==='none' && SCENARIO.activeTab==='course' && CURRENT==='A1'"))
+    # Turn 2 + the Sept 18 fixes: course rows fork without covering Japanese; MANAGE on the header's line with the captured air; the profile promo only without a pair; the feed tab from beat 1 in both paths with the promo post; the feed origin's back route
+    pg.evaluate("()=>applyPreset('A0')"); pg.evaluate("()=>{SCENARIO.overlay='courseSelection'; renderCourseSel()}"); pg.wait_for_timeout(200)
+    cr = []
+    for i in (0, 5):
+        pg.evaluate(f"()=>document.querySelectorAll('#coursesel .hit.crow')[{i}].click()"); pg.wait_for_timeout(200)
+        cr.append(q("(()=>{const o=document.getElementById('oos').getBoundingClientRect(); const j=document.querySelector('#coursesel .hit:not(.crow)').getBoundingClientRect(); return document.getElementById('oos').classList.contains('open') && document.querySelector('#oos .msg').textContent==='Not in this demo — tap Japanese' && (o.bottom<=j.top||o.top>=j.bottom) && o.bottom<=852})()")); pg.mouse.click(200, 90); pg.wait_for_timeout(100)
+    out["course_rows_fork_clear_of_japanese"] = int(all(cr) and q("document.querySelectorAll('#coursesel .hit.crow').length===6"))
+    pg.evaluate("()=>applyPreset('A0')"); pg.evaluate("()=>setState({overlay:'none', activeTab:'profile'})"); pg.wait_for_timeout(200)
+    mg = q("(()=>{const r=s=>document.querySelector(s).getBoundingClientRect(); return {hdrTop:r('#profile .buddies .sh > span').top, manTop:r('#profile .manage').top, above:r('#profile .buddies .sh > span').top-r('#profile .plate.b').bottom, below:r('#profile .plate.c').top-r('#profile .slot.empty').bottom}})()")
+    out["manage_on_header_line"] = int(abs((mg["manTop"] + 5) - (mg["hdrTop"] + 3)) <= 1.5)   # the crop's ink top vs the caps' ink top
+    out["section_air_captured"] = int(70 <= mg["above"] <= 78 and 60 <= mg["below"] <= 75)   # the promo no longer lives in this section (Sept 28)
+    # THE PROMO IN THE APP'S PROMO SLOT (Sept 28), by paint: the pink card on top where the blue card was, no blue left in the slot, the card's ink at the blue face's left/top and the slot's width; OVERVIEW keeps the captured air under the card (plate a is cut shorter, not re-cropped)
+    pk = lambda a: (a[..., 0] > 200) & (a[..., 1] < 170) & (a[..., 2] > 150)
+    # c() centres its target with scrollIntoView, which also scrolls an overflow-hidden PLATE holding it (the capture inside is taller than the plate; users can't, the probe can) — read the slot with the page and every plate at the top
+    top0 = lambda: (pg.evaluate("()=>{document.querySelector('#profile .scroll').scrollTop=0; document.querySelectorAll('#profile .plate').forEach(p=>p.scrollTop=0)}"), pg.wait_for_timeout(150))
+    top0(); sh = shot_now(pg); b = largest(pk(sh), 470, 660, 0, 393); bl = largest(blue(sh), 470, 660, 20, 372)
+    out["promo_when_no_pair"] = int(b is not None and q("document.elementFromPoint(100,500).classList.contains('promo')") and (bl is None or (bl[2] - bl[0]) * (bl[3] - bl[1]) < 20))
+    out["promo_at_slot"] = int(b is not None and abs(b[0] - 23.89) <= 1 and abs(b[1] - 478.8) <= 1 and abs((b[2] - b[0]) - 342.59) <= 1.5)
+    ov = lambda a: largest((a > 100).all(2) & (a < 175).all(2), 640, 720, 20, 140)   # the OVERVIEW caps (grey), under the card
+    o1 = ov(sh); pink_top, pink_h = (b[1], b[3] - b[1]) if b else (None, None)
+    out["promo_body_inert"] = int(q("(()=>{const im=document.querySelector('#profile .pslot .promo'); return getComputedStyle(im).cursor!=='pointer' && !im.onclick})()")); pg.mouse.click(100, 500); pg.wait_for_timeout(200)
+    out["promo_body_inert"] = int(out["promo_body_inert"] and q("SCENARIO.overlay==='none' && SCENARIO.activeTab==='profile' && !document.getElementById('oos').classList.contains('open')"))
+    c("#profile .pslot .hit.pcta"); out["promo_to_course_selection"] = int(q("SCENARIO.overlay==='courseSelection' && SCENARIO.courseSelFrom==='profile'")); pg.evaluate("()=>dismissCourseSelection()"); pg.wait_for_timeout(150)
+    c("#profile .pslot .hit.px"); top0(); sh = shot_now(pg); bl = largest(blue(sh), 470, 660, 20, 372); pkk = largest(pk(sh), 470, 660, 0, 393)
+    nopink = lambda pkk: pkk is None or (pkk[2] - pkk[0]) * (pkk[3] - pkk[1]) < 20   # the blue card's own art carries a pink fleck
+    out["promo_x_returns_blue"] = int(q("SCENARIO.promoDismissed===true && SCENARIO.activeTab==='profile'") and bl is not None and (bl[2] - bl[0]) > 300 and nopink(pkk))
+    # OVERVIEW keeps the captured air under the card: measured from the CARD TOP (the same edge for both cards; bottom edges read asymmetrically — the blue's dark outline blends into the page, the pink's edge doesn't), OVERVIEW sits closer by exactly the height difference, blue outer 178.15 (pt-1 rows 887-1217) vs the pink's ink
+    o2 = ov(sh); out["overview_air_kept"] = int(o1 is not None and o2 is not None and bl is not None and pink_top is not None and abs(((o2[1] - bl[1]) - (o1[1] - pink_top)) - (178.15 - pink_h)) <= 1.0)
+    # the cover occludes on its own (Jamie, Sept 28): with the pink card hidden, no blue anywhere in the slot region
+    pg.evaluate("()=>applyPreset('A0')"); pg.evaluate("()=>{setState({activeTab:'profile'}); document.querySelector('#profile .pslot .promo').style.visibility='hidden'}"); pg.wait_for_timeout(200); top0(); sh = shot_now(pg)
+    out["cover_occludes_alone"] = int(int(blue(sh[470 * DPR:665 * DPR, 15 * DPR:380 * DPR]).sum()) == 0); pg.evaluate("()=>{document.querySelector('#profile .pslot .promo').style.visibility=''}")
+    # the milestone is SHARED (Jamie, Sept 28): Otis's course score moves with Jamie's on the score-6 transition — the Co-Learning View's row and his friend-selection row (reachable after pairing via MANAGE -> Invite a buddy), where he can't be invited again
+    pg.evaluate("()=>applyPreset('A7')"); pg.wait_for_timeout(150); pg.evaluate("()=>POPUP.score6Popup.action()"); pg.wait_for_timeout(250); pg.evaluate("()=>setState({overlay:'colearning'})"); pg.wait_for_timeout(250)
+    ms = q("({you:SCENARIO.courses.japanese.score, otis:SCENARIO.partnerCourseScore, cy:document.querySelector('#colearn .scores .you').textContent, co:document.querySelector('#colearn .scores .otis').textContent})")
+    out["milestone_shared_score"] = int(ms == {"you": 6, "otis": 6, "cy": "6", "co": "6"})   # friend selection is unreachable once paired (every route forks), so the Co-Learning View row is the surface that shows his score
+    # scroll resets on a scenario change (Jamie, Sept 28): every scrollable surface, not just the path's anchor
+    pg.evaluate("()=>{applyPreset('A0'); setState({activeTab:'profile'}); document.querySelector('#profile .scroll').scrollTop=500; document.querySelector('#profile .plate.a').scrollTop=40}"); pg.wait_for_timeout(150)
+    sc0 = q("[document.querySelector('#profile .scroll').scrollTop, document.querySelector('#profile .plate.a').scrollTop]")
+    pg.evaluate("()=>{applyPreset('B2'); setState({activeTab:'profile'})}"); pg.wait_for_timeout(150)
+    sc1 = q("[document.querySelector('#profile .scroll').scrollTop, document.querySelector('#profile .plate.a').scrollTop, document.querySelector('#colearn .scroll').scrollTop, document.querySelector('#friends .scroll').scrollTop]")
+    out["scroll_reset_on_preset"] = int(sc0[0] == 500 and sc0[1] > 0 and sc1 == [0, 0, 0, 0])
+    # once a pair exists every route into the invite flow is a fork (Jamie, Sept 28); the manage card never covers Otis's row; before pairing the routes are live (covered above)
+    txt = "Not in this demo — you already have a buddy"; oosOpen = lambda: q(f"document.getElementById('oos').classList.contains('open') && document.querySelector('#oos .msg').textContent==='{txt}' && SCENARIO.overlay!=='courseSelection'")
+    pg.evaluate("()=>applyPreset('A7')"); pg.evaluate("()=>setState({activeTab:'profile'})"); pg.wait_for_timeout(150); c("#profile .slot.empty"); f1 = oosOpen(); pg.mouse.click(200, 100); pg.wait_for_timeout(100)
+    c("#profile .manage"); c("#manage .row.invite"); f2 = oosOpen() and q("(()=>{const o=document.getElementById('oos').getBoundingClientRect(); const r=document.querySelector('#manage .row.otis').getBoundingClientRect(); return o.top>=r.bottom||o.bottom<=r.top})()"); pg.mouse.click(200, 100); pg.wait_for_timeout(100); c("#manage .qx")
+    pg.evaluate("()=>applyPreset('A21')"); pg.evaluate("()=>setState({overlay:'none', activeTab:'feed'})"); pg.wait_for_timeout(200); c("#feed .pwin .hit.cta"); f3 = oosOpen(); pg.mouse.click(200, 100); pg.wait_for_timeout(100)
+    pg.evaluate("()=>{applyPreset('B7'); setState({flagTappable:true})}"); pg.wait_for_timeout(150); c("#stat-course img"); c("#menu-art .cta-hit"); f4 = oosOpen() and q("SCENARIO.overlay!=='friends'")   # the menu is never flag-tappable once B is paired; the flag is forced live here only to exercise the guard; pg.mouse.click(200, 100); pg.wait_for_timeout(100)
+    out["paired_routes_fork"] = int(bool(f1 and f2 and f3 and f4))
+    pg.evaluate("()=>applyPreset('A7')"); pg.evaluate("()=>setState({activeTab:'profile'})"); pg.wait_for_timeout(150); top0(); sh = shot_now(pg); bl = largest(blue(sh), 470, 660, 20, 372); pkk = largest(pk(sh), 470, 660, 0, 393)
+    out["promo_hidden_when_paired"] = int(q("getComputedStyle(document.querySelector('#profile .pslot')).display==='none' && Math.abs(document.querySelector('#profile .plate.a').getBoundingClientRect().height-631)<0.5") and bl is not None and (bl[2] - bl[0]) > 300 and nopink(pkk))
+    ft = []
+    for pre in ("A0", "B2"):
+        pg.evaluate(f"()=>applyPreset('{pre}')"); pg.wait_for_timeout(150); c('#nav img[data-slot="nav3"]'); px = shot_now(pg)[180 * DPR, 200 * DPR]
+        ft.append(q("SCENARIO.activeTab==='feed' && document.elementFromPoint(200,180).classList.contains('promo')") and px[0] > 200 and px[1] < 170 and px[2] > 150)   # by paint: the promo's pink card is what's on top in the first slot (Sept 28)
+    out["feed_tab_from_beat1_both"] = int(all(ft))
+    # only INVITE A BUDDY NOW is tappable on the post (Sept 28): the illustration does nothing, the img carries no pointer
+    pg.mouse.click(150, 180); pg.wait_for_timeout(200); out["feed_promo_body_inert"] = int(q("SCENARIO.overlay==='none' && SCENARIO.activeTab==='feed' && !document.getElementById('oos').classList.contains('open') && getComputedStyle(document.querySelector('#feed .promo')).cursor!=='pointer' && !document.querySelector('#feed .promo').onclick"))
+    hb = q("(()=>{const r=document.querySelector('#feed .pwin .hit.cta').getBoundingClientRect(); return [r.left,r.top,r.right,r.bottom]})()"); sh = shot_now(pg); rg = largest((np.abs(sh - np.array([52, 69, 79])).sum(2) < 30), hb[1] - 3, hb[3] + 3, hb[0] - 3, hb[2] + 3)
+    out["feed_hit_on_cta"] = int(rg is not None and abs(rg[0] - hb[0]) <= 1.5 and abs(rg[2] - hb[2]) <= 1.5 and abs(rg[1] - hb[1]) <= 1.5 and abs(rg[3] - hb[3]) <= 1.5)   # the hit box is the button's ring, by paint
+    c("#feed .pwin .hit.cta"); out["feed_promo_to_course_selection"] = int(q("SCENARIO.overlay==='courseSelection' && SCENARIO.courseSelFrom==='feed' && document.getElementById('coursesel').classList.contains('single')"))
+    pg.evaluate("()=>dismissCourseSelection()"); pg.wait_for_timeout(150); out["x_back_to_feed"] = int(q("SCENARIO.overlay==='none' && SCENARIO.activeTab==='feed'"))
+    src = pg.evaluate("()=>document.documentElement.outerHTML"); out["no_placeholder_markers"] = int(all(("PLACEHOLDER" not in line) for line in src.splitlines() if any(k in line for k in ("nudge:    ", "share:    ", "moreabout:", "finding:  "))))
+    return out
+
+
 def intro_popup(a, pg):
     """§17b: shown once on first open beneath preset A's beat 1; prototype
     chrome (white dashes on --surface-raised, the shadow), Duolingo-green
@@ -713,21 +841,32 @@ def intro_popup(a, pg):
     pg.reload(); pg.wait_for_timeout(900)
     d = pg.evaluate("""()=>{const i=document.getElementById('intro'); const c=i.querySelector('.card'); const cs=getComputedStyle(c); const rows=[...i.querySelectorAll('.row')].map(r=>[r.querySelector('.t').textContent, r.querySelector('.s').textContent, !!r.querySelector('.pill'), !!r.querySelector('.ico svg'), r.querySelector('.t').getBoundingClientRect().height<22?1:0, r.querySelector('.s').getBoundingClientRect().height<20?1:0]);
       const pill=i.querySelector('.pill'); const pr=pill.getBoundingClientRect(), tr=i.querySelector('.row[data-k="A"] .t').getBoundingClientRect();
-      return {open:i.classList.contains('open'), under:CURRENT, dashed:cs.borderTopStyle, border:cs.borderTopColor, shadow:cs.boxShadow!=='none'?1:0, tag:i.querySelector('.tag').textContent, ttl:i.querySelector('.ttl').textContent, ttlColor:getComputedStyle(i.querySelector('.ttl')).color, sub:i.querySelector('.sub').textContent, rows, pillText:pill.textContent, pillColor:getComputedStyle(pill).color, pillClear:1, note:i.querySelector('.note').textContent, noteSize:parseFloat(getComputedStyle(i.querySelector('.note')).fontSize), pinkInChrome:(i.innerHTML+cs.color).toLowerCase().includes('f781cb')?1:0, squares:!!i.querySelector('.sq')}}""")
+      const rc=i.querySelector('.frame rect'), rcs=rc?getComputedStyle(rc):null;
+      return {open:i.classList.contains('open'), under:CURRENT, dashed:rcs&&rcs.strokeDasharray!=='none'&&parseFloat(rcs.strokeWidth)>=1.5?'dashed':'none', border:rcs?rcs.stroke:'none', shadow:cs.boxShadow!=='none'?1:0, blur:(getComputedStyle(i).backdropFilter||getComputedStyle(i).webkitBackdropFilter||'').includes('blur')?1:0, cardW:c.getBoundingClientRect().width, tagColor:getComputedStyle(i.querySelector('.tag')).color, tag:i.querySelector('.tag').textContent, ttl:i.querySelector('.ttl').textContent, ttlColor:getComputedStyle(i.querySelector('.ttl')).color, sub:i.querySelector('.sub').textContent, rows, pillText:pill.textContent, pillColor:getComputedStyle(pill).color, pillClear:1, note:i.querySelector('.note').textContent, noteSize:parseFloat(getComputedStyle(i.querySelector('.note')).fontSize), pinkInChrome:(i.innerHTML+cs.color).toLowerCase().includes('f781cb')?1:0, squares:!!i.querySelector('.sq')}}""")
     green = lambda c: abs(c[0] - 120) < 8 and abs(c[1] - 201) < 8 and abs(c[2] - 60) < 8
-    # the intro's frame is GREEN (Jamie, Sept 17): the one chrome frame that never sits on pink; the out-of-scope popup and the simulate controls stay white
-    out = {"open_on_load": int(d["open"] and d["under"] == "A0"), "frame_green_dashed": int(d["dashed"] == "dashed" and green(re_rgb(d["border"])) and d["shadow"] == 1), "tag": int(d["tag"] == "PROTOTYPE")}
+    # the intro's frame is GREEN (Jamie, Sept 17): the one chrome frame that never sits on pink; the out-of-scope popup and the simulate controls stay white. Rebuilt Sept 28: the frame is an SVG rect (dasharray 4.4 1.7 at 2 px), the dim blurs the app, the card is 343 wide (to be judged in the bezel; 313 the fallback)
+    out = {"open_on_load": int(d["open"] and d["under"] == "A0"), "frame_green_dashed": int(d["dashed"] == "dashed" and green(re_rgb(d["border"])) and d["shadow"] == 1), "tag": int(d["tag"] == "PROTOTYPE" and green(re_rgb(d["tagColor"])))}
+    out["blur_backdrop"] = d["blur"]; out["card_343"] = int(abs(d["cardW"] - 343) < 0.5)
     out["other_chrome_white"] = int(pg.evaluate("()=>[getComputedStyle(document.getElementById('oos')).borderTopColor, getComputedStyle(document.querySelector('#status .sim')).borderTopColor].every(c=>c==='rgb(255, 255, 255)' || /^color\\(display-p3 1 1 1/.test(c))"))
-    out["title_green"] = int(d["ttl"] == "Course Buddies" and green(re_rgb(d["ttlColor"]))); out["sub_ok"] = int(d["sub"] == "Learn a course with a friend.")
+    out["title_white"] = int(d["ttl"] == "Course Buddies" and all(v > 240 for v in re_rgb(d["ttlColor"]))); out["sub_ok"] = int(d["sub"] == "Learn a course with a friend.")   # white title (Jamie, Sept 28): the accent stays on the tag, tiles, pill and frame
     ln = pg.evaluate("""()=>{const i=document.getElementById('intro'); const lines=el=>{const cs=getComputedStyle(el); const lh=cs.lineHeight==='normal'?parseFloat(cs.fontSize)*1.364:parseFloat(cs.lineHeight); return Math.round(el.getBoundingClientRect().height/lh)};
       const tA=i.querySelector('.row[data-k="A"] .t'); const r=document.createRange(); r.selectNodeContents(tA); const pill=i.querySelector('.pill').getBoundingClientRect();
       return {w:i.querySelector('.card').getBoundingClientRect().width, sub:lines(i.querySelector('.sub')), t:[lines(tA), lines(i.querySelector('.row[data-k="B"] .t'))], s:[lines(i.querySelector('.row[data-k="A"] .s')), lines(i.querySelector('.row[data-k="B"] .s'))], note:lines(i.querySelector('.note')), clearance:pill.left-r.getBoundingClientRect().right}}""")
-    out["card_313"] = int(abs(ln["w"] - 313) < 0.5); out["lines_held"] = int(ln["sub"] == 1 and ln["t"] == [1, 1] and ln["s"] == [1, 1] and ln["note"] == 1)
-    # the tag on the corner: its box is above the title's INK (paint), and no title-white pixel lies inside it
-    tg = pg.evaluate("()=>{const i=document.getElementById('intro'); const p=i.querySelector('.pill').getBoundingClientRect(); const rw=i.querySelector('.row[data-k=\"A\"]').getBoundingClientRect(); const rg=document.createRange(); rg.selectNodeContents(i.querySelector('.row[data-k=\"A\"] .t')); const t=rg.getBoundingClientRect(); return {p:[p.left,p.top,p.right,p.bottom], t:[t.left,t.top,t.right,t.bottom], corner:(Math.abs(p.right-rw.right)<=3 && p.top<rw.top+2)?1:0, radius:parseFloat(getComputedStyle(i.querySelector('.pill')).borderRadius)}}")
-    sh = shot_now(pg); px = sh[int(tg["p"][1] * DPR):int(tg["p"][3] * DPR), int(tg["p"][0] * DPR):int(tg["p"][2] * DPR)]; tx = sh[int(tg["t"][1] * DPR):int(tg["t"][3] * DPR), int(tg["t"][0] * DPR):int(tg["t"][2] * DPR)]
-    ink_top = (np.where((tx > 230).all(-1))[0].min() / DPR + tg["t"][1]) if ((tx > 230).all(-1)).any() else tg["t"][1]
-    out["tag_on_corner"] = int(tg["corner"] == 1 and 4 <= tg["radius"] <= 6); out["tag_clears_title_ink"] = int(int(((px > 230).all(-1)).sum()) == 0 and tg["p"][3] <= ink_top)
+    out["lines_held"] = int(ln["sub"] == 1 and ln["t"] == [1, 1] and ln["s"] == [1, 1] and ln["note"] == 1)
+    # CR's rhythm by paint (Sept 28): tag cap 29 below the frame top, title->sub 11, sub->rows 25, rows 58 tall and 20 apart at inset 27, tiles 40, note 24 under the rows and 30 above the frame bottom; type 21/12/14/11/9/8.5
+    rh = pg.evaluate("""()=>{const i=document.getElementById('intro'); const r=s=>{const b=i.querySelector(s).getBoundingClientRect(); return [b.left,b.top,b.width,b.height]}; const fs=s=>parseFloat(getComputedStyle(i.querySelector(s)).fontSize);
+      return {card:r('.card'), rows:[...i.querySelectorAll('.row')].map(x=>{const b=x.getBoundingClientRect(); return [b.left,b.top,b.width,b.height]}), ico:r('.row .ico'), pill:r('.pill'), fs:[fs('.ttl'),fs('.sub'),fs('.row .t'),fs('.row .s'),fs('.note'),fs('.pill')], rowRadius:parseFloat(getComputedStyle(i.querySelector('.row')).borderRadius), cardRadius:parseFloat(getComputedStyle(i.querySelector('.card')).borderRadius)}}""")
+    sh2 = shot_now(pg); cd = rh["card"]; grn = lambda a: (a[..., 1] > 150) & (a[..., 0] < 160) & (a[..., 2] < 120); wht = lambda a: (a > 215).all(2); gry = lambda a: (a > 110).all(2) & (a < 190).all(2)
+    tg = largest(grn(sh2), cd[1] + 20, cd[1] + 45, 120, 280); tt = largest(wht(sh2), cd[1] + 45, cd[1] + 80, 100, 300); sb = largest(gry(sh2), cd[1] + 76, cd[1] + 102, 100, 300); nt = largest(gry(sh2), rh["rows"][1][1] + 70, rh["rows"][1][1] + 100, 100, 300)
+    r0, r1 = rh["rows"]
+    out["popup_cr_rhythm"] = int(tg is not None and abs((tg[1] - cd[1]) - 29) <= 1.5 and tt is not None and sb is not None and abs((sb[1] - tt[3]) - 11) <= 1.5 and abs((r0[1] - sb[3]) - 25) <= 1.5
+                               and abs(r0[3] - 58) < 0.5 and abs(r1[3] - 58) < 0.5 and abs((r1[1] - r0[1] - r0[3]) - 20) < 0.5 and abs((r0[0] - cd[0]) - 27) < 0.5 and abs(rh["ico"][2] - 40) < 0.5
+                               and nt is not None and abs((nt[1] - (r1[1] + r1[3])) - 24) <= 1.5 and abs(((cd[1] + cd[3]) - nt[3]) - 30) <= 1.5 and 7 <= rh["rowRadius"] <= 9 and 19 <= rh["cardRadius"] <= 21)
+    out["popup_type_scale"] = int(rh["fs"] == [21, 12, 14, 11, 9, 8.5] and abs(rh["pill"][3] - 14) < 0.5)
+    # the pill INSIDE the row at its top-right corner (Jamie, Sept 28, corrected to CR): box 7 below the row's top edge and 8 from its right (±1), 14 tall, radius 4-6, in the row not the title; the title stays (cap top 15.1 below the row, ±1) and the pill starts >= 4 right of its ink
+    tg = pg.evaluate("()=>{const i=document.getElementById('intro'); const p=i.querySelector('.pill').getBoundingClientRect(); const rw=i.querySelector('.row[data-k=\"A\"]').getBoundingClientRect(); return {p:[p.left,p.top,p.right,p.bottom], row:[rw.left,rw.top,rw.right,rw.bottom], radius:parseFloat(getComputedStyle(i.querySelector('.pill')).borderRadius), inRow:(i.querySelector('.row[data-k=\"A\"]').contains(i.querySelector('.pill')) && !i.querySelector('.row[data-k=\"A\"] .t').contains(i.querySelector('.pill')))?1:0}}")
+    sh = shot_now(pg); rw = tg["row"]; ti = largest((sh > 215).all(2), rw[1] + 4, rw[1] + 30, rw[0] + 60, tg["p"][0] - 1)   # the title's white ink, left of the pill
+    out["pill_in_corner"] = int(tg["inRow"] == 1 and abs((tg["p"][1] - rw[1]) - 7) <= 1 and abs((rw[2] - tg["p"][2]) - 8) <= 1 and abs((tg["p"][3] - tg["p"][1]) - 14) < 0.5 and 4 <= tg["radius"] <= 6 and ti is not None and abs((ti[1] - rw[1]) - 15.1) <= 1 and tg["p"][0] - ti[2] >= 4)
     out["rows_verbatim_one_line"] = int(d["rows"] == [["Path A — Fresh Start", "Both new to the language", True, True, 1, 1], ["Path B — Meet Up", "Both already learning", False, True, 1, 1]] and not d["squares"])
     out["pill_start_here_green"] = int(d["pillText"] == "Start here" and green(re_rgb(d["pillColor"])) and d["pillClear"] == 1); out["note_quiet"] = int(d["note"] == "Simulate buttons skip ahead in time." and d["noteSize"] <= 11.5)
     out["no_pink_in_chrome"] = int(d["pinkInChrome"] == 0)
@@ -735,12 +874,101 @@ def intro_popup(a, pg):
     out["pick_B_beat1"] = int(pg.evaluate("()=>CURRENT==='B2' && !document.getElementById('intro').classList.contains('open') && SCENARIO.reviewRange===null"))
     pk = pg.evaluate("()=>{document.getElementById('dropdown').classList.add('open'); const d=document.getElementById('dropdown'); const rows=[...d.querySelectorAll('.row')].map(r=>[r.dataset.k, r.querySelector('.t').textContent, r.querySelector('.s')?.textContent||null, r.classList.contains('on'), !!r.querySelector('.ico svg')]); const on=d.querySelector('.row.on'); const off=d.querySelector('.row:not(.on)[data-k]'); const bar=getComputedStyle(document.querySelector('#scenariobar span')).color; const r={bar, rows, hd:d.querySelector('.hd').textContent, sep:!!d.querySelector('.sep'), onBg:getComputedStyle(on).backgroundColor, onBorder:getComputedStyle(on).borderTopColor, tick:getComputedStyle(on.querySelector('.tick')).color, offBg:getComputedStyle(off).backgroundColor, offBorder:getComputedStyle(off).borderTopColor, barText:document.getElementById('v-scenario').textContent}; d.classList.remove('open'); return r}")
     out["bar_green"] = int(green(re_rgb(pk["bar"])) and pk["barText"] == "Path B — Meet Up"); out["selected_green"] = int(pk["onBg"].startswith("rgba(120, 201, 60") and pk["onBorder"].startswith("rgba(120, 201, 60") and green(re_rgb(pk["tick"])))
-    out["others_neutral"] = int(pk["offBg"] in ("rgba(0, 0, 0, 0)", "transparent") and pk["offBorder"] in ("rgba(0, 0, 0, 0)", "transparent"))
+    out["others_neutral"] = int(pk["offBg"] == "rgb(30, 40, 49)" and pk["offBorder"].startswith("rgba(255, 255, 255, 0.08"))   # every row a card (CR's menu, Sept 28): one neutral fill and hairline for the unselected rows, no green
+    # the MENU (Sept 28): full width, one surface with the bar, rows 58 tall at x 12-381 and 8 apart, Reset 43, label ink at x ~21 / y ~77 (cap 7.4), title cap ~10.6, the drawn check's right edge 16 from the row's edge — CR's numbers at 1.7608 px/CSS
+    pg.evaluate("()=>document.getElementById('dropdown').classList.add('open')"); pg.wait_for_timeout(200)
+    geo = pg.evaluate("""()=>{const d=document.getElementById('dropdown'); const r=e=>e.getBoundingClientRect(); const dd=r(d); const rows=[...d.querySelectorAll('.row')].map(x=>{const b=r(x); return [b.left,b.top,b.width,b.height]}); const cs=getComputedStyle(d);
+      return {left:dd.left, width:dd.width, top:dd.top, rows, radius:parseFloat(getComputedStyle(d.querySelector('.row')).borderRadius), pad:cs.paddingLeft, bar:getComputedStyle(document.getElementById('scenariobar')).backgroundColor, panel:cs.backgroundColor, edge:cs.borderBottomWidth, sep:(()=>{const b=r(d.querySelector('.sep')); return [b.left,b.width,b.top]})(), t:parseFloat(getComputedStyle(d.querySelector('.row .t')).fontSize), s:parseFloat(getComputedStyle(d.querySelector('.row .s')).fontSize), hd:parseFloat(getComputedStyle(d.querySelector('.hd')).fontSize)}}""")
+    sh = shot_now(pg); lab = largest((sh > 80).all(2) & (sh < 170).all(2), 62, 100, 0, 200); cap = largest((sh > 200).all(2), 100, 140, 60, 72)
+    on = pg.evaluate("()=>{const b=document.querySelector('#dropdown .row.on').getBoundingClientRect(); return [b.left,b.top,b.right,b.bottom]}")   # the check sits on whichever row is selected
+    tk = largest((sh[..., 1] > 150) & (sh[..., 0] < 140) & (sh[..., 2] < 110), on[1] + 10, on[3] - 10, 330, 393)
+    rw = geo["rows"]; out["menu_full_width_under_bar"] = int(abs(geo["left"]) < 0.5 and abs(geo["width"] - 393) < 0.5 and abs(geo["top"] - 59) < 0.5 and geo["bar"] == geo["panel"] and geo["edge"] == "1px" and geo["pad"] == "0px")
+    out["menu_rows_cr_geometry"] = int(len(rw) == 3 and all(abs(b[0] - 12) < 0.5 and abs(b[2] - 369) < 0.5 for b in rw) and abs(rw[0][3] - 58) < 0.5 and abs(rw[1][3] - 58) < 0.5 and abs(rw[2][3] - 43) < 0.5 and abs((rw[1][1] - rw[0][1]) - 66) < 0.5 and 8 <= geo["radius"] <= 10 and abs(geo["sep"][0] - 12) < 0.5 and abs(geo["sep"][1] - 369) < 0.5)
+    out["menu_type_scaled"] = int(geo["t"] == 15 and geo["s"] == 11 and abs(geo["hd"] - 10.5) < 0.1 and lab is not None and abs(lab[0] - 21) <= 1 and abs(lab[1] - 77) <= 1 and cap is not None and 10 <= (cap[3] - cap[1]) <= 11.5 and tk is not None and abs(on[2] - tk[2] - 16) <= 1.5)
+    pg.evaluate("()=>document.getElementById('dropdown').classList.remove('open')")
     out["picker_collapsed"] = int(pk["rows"] == [["A0", "Path A — Fresh Start", "Both new to the language", False, True], ["B2", "Path B — Meet Up", "Both already learning", True, True], ["__reset", "Reset scenario", None, False, True]] and pk["sep"] and pk["hd"].upper() == "DEMO SCENARIOS")
     pg.evaluate("()=>applyPreset('A13')"); pg.wait_for_timeout(150); pg.evaluate("()=>{document.getElementById('dropdown').classList.add('open'); document.querySelector('#dropdown .row[data-k=\"__reset\"]').click()}"); pg.wait_for_timeout(200)
     out["reset_to_beat1"] = int(pg.evaluate("()=>CURRENT==='A0' && SCENARIO.overlay==='none'"))
     pg.evaluate("()=>applyPreset('B7')"); pg.wait_for_timeout(150); pg.evaluate("()=>{document.getElementById('dropdown').classList.add('open'); document.querySelector('#dropdown .row[data-k=\"__reset\"]').click()}"); pg.wait_for_timeout(200)
     out["reset_B_to_B2"] = int(pg.evaluate("()=>CURRENT==='B2' && SCENARIO.reviewRange===null && SCENARIO.pairStatus!=='active'"))
+    return out
+
+
+def _divider_c(s, y0, y1):
+    """Centre (CSS) of the plate's divider rows inside a window: rows uniform across x 60-330 at the line's tone."""
+    rows = [Y / DPR for Y in range(int(y0 * DPR), int(y1 * DPR)) if s[Y, 60 * DPR:330 * DPR].std(0).max() < 8 and 35 < s[Y, 60 * DPR:330 * DPR].mean(0)[0] < 70]
+    return (min(rows) + max(rows) + 1 / DPR) / 2 if rows else None
+
+
+def feed_slots(a, pg):
+    """The score post is the score-6 event (Sept 28): A before the milestone
+    and B throughout show the promo in the FIRST slot, covering the score
+    post; A after the milestone shows the score post first, the promo second.
+    All by paint: the pink card at the slot's rhythm (card top 130.0 under
+    the header, 420.1 after the score post), the score post's flag field and
+    Otis's purple disc absent where it must not exist, the plate's post-1
+    divider re-landed after the promo's cell (449.3 / 739.4) with Dani's red
+    hat under it in the first-slot states."""
+    out = {}
+    pink = lambda a: (a[..., 0] > 200) & (a[..., 1] < 170) & (a[..., 2] > 150)
+    purple = lambda a: (a[..., 2] > 150) & (a[..., 0] > 100) & (a[..., 0] < 190) & (a[..., 1] < 130)
+    red = lambda a: (a[..., 0] > 170) & (a[..., 1] < 90) & (a[..., 2] < 110)
+    def probe(pre):
+        pg.evaluate(f"()=>applyPreset('{pre}')"); pg.wait_for_timeout(150); pg.evaluate("()=>setState({activeTab:'feed', overlay:'none'})"); pg.wait_for_timeout(300); return shot(pg)
+    for pre, key in (("A0", "A_before"), ("B2", "B")):
+        s = probe(pre)
+        b = largest(pink(s), 110, 300, 0, 393); out[f"{key}_card_top"] = b[1] if b else None; out[f"{key}_card_w"] = (b[2] - b[0]) if b else None
+        fl = largest((s > 200).all(2), 143, 190, 262, 332); out[f"{key}_no_score_flag"] = int(fl is None or (fl[2] - fl[0]) * (fl[3] - fl[1]) < 20)
+        pp = largest(purple(s), 181, 243, 264, 366); out[f"{key}_no_pair"] = int(pp is None or (pp[2] - pp[0]) < 8)
+        out[f"{key}_next_div_c"] = _divider_c(s, 444, 455)
+        hat = largest(red(s), 460, 500, 20, 90); out[f"{key}_dani_under"] = int(hat is not None and (hat[2] - hat[0]) > 20)
+        out[f"{key}_promo_on_top"] = int(pg.evaluate("()=>document.elementFromPoint(200,180).classList.contains('promo') && document.elementFromPoint(200,470).closest('#feed .p2win')!==null"))
+    s = probe("A21")
+    b = largest(pink(s), 400, 600, 0, 393); out["A_after_card_top"] = b[1] if b else None
+    fl = largest((s > 200).all(2), 143, 190, 262, 332); out["A_after_score_flag"] = int(fl is not None and (fl[2] - fl[0]) > 30)
+    out["A_after_next_div_c"] = _divider_c(s, 734, 745)
+    out["A_after_score_on_top"] = int(pg.evaluate("()=>document.elementFromPoint(200,180).closest('#feed .body')!==null && document.elementFromPoint(200,470).classList.contains('promo')"))
+    # first open after a fresh load (Sept 28): the promo must already be decoded and sized in the SAME task that makes the feed visible — the feed is built at load, behind the intro — or the score post paints through for a few frames (the ghost Jamie saw)
+    pg.reload(); pg.wait_for_timeout(900); pg.evaluate("()=>document.getElementById('intro')?.classList.remove('open')")
+    r = pg.evaluate("""()=>{document.querySelector('#nav img[data-slot="nav3"]').click(); const pr=document.querySelector('#feed .promo'), pl=document.querySelector('#feed .body .plate'), p2=document.querySelector('#feed .p2win img');
+      return {vis:getComputedStyle(document.getElementById('feed')).display==='block', ready:[pr,pl,p2].every(i=>i.complete && i.naturalWidth>0), sized:parseFloat(pr.style.width)>300}}""")
+    out["first_open_decoded"] = int(r["vis"] and r["ready"] and r["sized"])
+    return out
+
+
+def desktop_panel(a, pg):
+    """The happy-path panel, the device frame and the fit cap (Sept 28):
+    the panel hidden below 1100 with no gutter, shown from 1100 at left 24 /
+    260 wide with body padded 320; the frame (the retired shell's bezel,
+    moved in-file) on above 430 with every dimension scaled by --fit, off
+    at <= 430: no rounding, no shadow, no notch, dark page — which is what
+    the 393 x 852 showcase embed gets. Scale and stage-local layout are
+    identical either side of 1100; fit never exceeds 1; with the frame on,
+    fit = min(1, (h - 48) / 880, (w - gutter - 48) / 421). A lists ten
+    steps, B nine, re-rendered on the picker's path rows and on Reset."""
+    out = {}
+    PR = "()=>{const st=document.getElementById('stage').getBoundingClientRect(); const i=document.getElementById('info'); const f=document.querySelector('#stat-course img').getBoundingClientRect(); const n=document.querySelector('#nav img[data-slot=\"nav3\"]').getBoundingClientRect(); const bz=document.querySelector('#device .bezel'), isl=document.querySelector('#fit .island'), ft=document.getElementById('fit'); const fb=ft.getBoundingClientRect(), bb=bz.getBoundingClientRect(); return {fit:+getComputedStyle(document.documentElement).getPropertyValue('--fit'), panel:getComputedStyle(i).display, pad:getComputedStyle(document.body).paddingLeft, box:(()=>{const r=i.getBoundingClientRect(); return [r.left,r.width]})(), local:[+(f.left-st.left).toFixed(2),+(f.top-st.top).toFixed(2),+(n.left-st.left).toFixed(2),+(n.top-st.top).toFixed(2)], stageW:st.width, bezel:getComputedStyle(bz).display, island:getComputedStyle(isl).display, radius:parseFloat(getComputedStyle(ft).borderRadius), bg:getComputedStyle(document.body).backgroundColor, bgimg:getComputedStyle(document.body).backgroundImage, ring:[+(fb.left-bb.left).toFixed(2),+(fb.top-bb.top).toFixed(2),+(bb.right-fb.right).toFixed(2),+(bb.bottom-fb.bottom).toFixed(2)], stageLeft:st.left}}"
+    ST = "()=>({ttl:document.querySelector('#info .ttl').textContent, n:document.querySelectorAll('#info li').length, cur:CURRENT})"
+    try:
+        pg.set_viewport_size({"width": 1099, "height": 900}); pg.wait_for_timeout(250); lo = pg.evaluate(PR)
+        pg.set_viewport_size({"width": 1101, "height": 900}); pg.wait_for_timeout(250); hi = pg.evaluate(PR)
+        want = min(1, (900 - 48) / 880)
+        out["panel_hidden_below_1100"] = int(lo["panel"] == "none" and lo["pad"] == "0px")
+        out["panel_shown_from_1100"] = int(hi["panel"] == "block" and hi["pad"] == "320px" and hi["box"] == [24, 260])
+        out["stage_identical_across_threshold"] = int(lo["local"] == hi["local"] and abs(lo["fit"] - hi["fit"]) < 1e-9 and abs(lo["fit"] - want) < 1e-6 and abs(lo["stageW"] - hi["stageW"]) < 0.01)
+        out["frame_on_scaled"] = int(hi["bezel"] == "block" and hi["island"] == "block" and abs(hi["radius"] - 42 * hi["fit"]) < 0.1 and all(abs(v - 14 * hi["fit"]) < 0.1 for v in hi["ring"]) and hi["bgimg"].startswith("linear-gradient(135deg, rgb(27, 42, 34)"))   # the framed page: the dark diagonal gradient (Sept 28)
+        pg.evaluate("()=>{document.getElementById('dropdown').classList.add('open'); document.querySelector('#dropdown .row[data-k=\"B2\"]').click()}"); pg.wait_for_timeout(200); b = pg.evaluate(ST)
+        pg.evaluate("()=>applyPreset('B7')"); pg.wait_for_timeout(150)
+        pg.evaluate("()=>{document.getElementById('dropdown').classList.add('open'); document.querySelector('#dropdown .row[data-k=\"__reset\"]').click()}"); pg.wait_for_timeout(200); r = pg.evaluate(ST)
+        pg.evaluate("()=>{document.getElementById('dropdown').classList.add('open'); document.querySelector('#dropdown .row[data-k=\"A0\"]').click()}"); pg.wait_for_timeout(200); a_ = pg.evaluate(ST)
+        out["panel_rerenders"] = int(b == {"ttl": "Path B — Meet Up", "n": 9, "cur": "B2"} and r == {"ttl": "Path B — Meet Up", "n": 9, "cur": "B2"} and a_ == {"ttl": "Path A — Fresh Start", "n": 10, "cur": "A0"})
+        pg.set_viewport_size({"width": 1800, "height": 1400}); pg.wait_for_timeout(250); tall = pg.evaluate(PR); out["fit_capped_at_1"] = int(tall["fit"] == 1 and tall["radius"] == 42 and tall["ring"] == [14, 14, 14, 14])
+        pg.set_viewport_size({"width": 431, "height": 900}); pg.wait_for_timeout(250); on = pg.evaluate(PR)
+        pg.set_viewport_size({"width": 430, "height": 900}); pg.wait_for_timeout(250); off = pg.evaluate(PR)
+        out["frame_full_bleed_at_430"] = int(on["bezel"] == "block" and on["panel"] == "none" and off["bezel"] == "none" and off["island"] == "none" and off["radius"] == 0 and off["bg"] == "rgb(13, 20, 22)" and off["bgimg"] == "none" and off["fit"] == 1 and off["pad"] == "0px")   # flat #0D1416 below 430
+    finally:
+        pg.set_viewport_size({"width": 393, "height": 852}); pg.wait_for_timeout(250)
+    at = pg.evaluate(PR); out["iframe_size_no_panel_no_frame"] = int(at["panel"] == "none" and at["pad"] == "0px" and at["fit"] == 1 and at["stageW"] == 393 and at["bezel"] == "none" and at["island"] == "none" and at["radius"] == 0 and at["stageLeft"] == 0)
     return out
 
 
@@ -758,9 +986,9 @@ def feed_to_path(a, pg):
     out["back_to_paired_path"] = int(pg.evaluate("()=>SCENARIO.activeTab==='course' && SCENARIO.pairStatus==='active' && SCENARIO.courses.japanese.score===6 && SCENARIO.partnerProgress==='score6' && document.querySelector('.marker')!==null && document.getElementById('ctile').classList.contains('on')"))
     pg.evaluate("()=>applyPreset('A3')"); pg.wait_for_timeout(200); click('#nav img[data-slot="nav0"]')
     out["A3_back_paired"] = int(pg.evaluate("()=>SCENARIO.activeTab==='course' && SCENARIO.pairStatus==='active' && document.querySelector('.marker')!==null"))
-    pg.evaluate("()=>applyPreset('A2')"); pg.wait_for_timeout(200); out["solo_feed_not_live"] = int(pg.evaluate("()=>document.querySelector('#nav img[data-slot=\"nav3\"]').style.cursor!=='pointer'"))
+    pg.evaluate("()=>applyPreset('A2')"); pg.wait_for_timeout(200); out["solo_feed_not_live"] = int(pg.evaluate("()=>document.querySelector('#nav img[data-slot=\"nav3\"]').style.cursor==='pointer'"))   # Turn 2: live everywhere (the promo post)
     pg.evaluate("()=>{applyPreset('B7'); const c=JSON.parse(JSON.stringify(SCENARIO.courses)); c.japanese.score=6; setState({courses:c})}"); pg.wait_for_timeout(200)
-    out["B_feed_never_live"] = int(pg.evaluate("()=>document.querySelector('#nav img[data-slot=\"nav3\"]').style.cursor!=='pointer'"))   # the feed carries Path A's post
+    out["B_feed_never_live"] = int(pg.evaluate("()=>document.querySelector('#nav img[data-slot=\"nav3\"]').style.cursor==='pointer'"))
     out["no_score_under_5"] = int(pg.evaluate("()=>FRIENDS.every(f=>Object.values(f.scores).concat(Object.values(f.scoresA||{})).every(v=>v>=5))"))   # a course score can't be 0; everyone starts at 5 — scoresA included
     return out
 
@@ -802,6 +1030,10 @@ def receiver_loop(a, pg):
     click("#question .ctahit")
     d = pg.evaluate("()=>{const s=document.getElementById('status'); return {ov:SCENARIO.overlay, st:s.dataset.state, e:SCENARIO.energy, combo:SCENARIO.comboCount, cs:SCENARIO.challengeState, rows:s.querySelectorAll('.report .rrow').length, sb:getComputedStyle(s.querySelector('.sendback')).display, nn:getComputedStyle(s.querySelector('.notnow')).display, sim:getComputedStyle(s.querySelector('.sim')).display, big:s.querySelector('.split .half:last-child .big').textContent}}")
     out["state4"] = int(d["ov"] == "status" and d["st"] == "youanswered" and d["cs"] == "open"); out["energy_15"] = int(d["e"] == 15); out["combo_2"] = int(d["combo"] == 2 and d["big"] == "2")
+    # copy (Jamie, Sept 28): the You-answered subline keeps the turn state without echoing SEND ONE BACK; the report's five answers are complete sentences across the unit's two patterns, no duplicates
+    cp = pg.evaluate("()=>({sub:document.querySelector('#status .sub').textContent, an:[...document.querySelectorAll('#status .report .rrow .an')].map(e=>e.textContent), ro:[...document.querySelectorAll('#status .report .rrow .ro')].map(e=>e.textContent)})")
+    out["state4_sub_copy"] = int(cp["sub"] == "Your turn.Send when you're ready." and pg.evaluate("()=>document.querySelector('#status .sub').innerHTML") == "Your turn.<br>Send when you're ready.")   # textContent drops the <br>; the break is at the sentence
+    out["report_five_sentences"] = int(len(cp["an"]) == 5 and all(a.endswith("。") for a in cp["an"]) and len(set(cp["an"])) == 5 and all(a.endswith("です。") or a.endswith("ください。") for a in cp["an"]) and cp["an"][3] == "みず です。" and cp["an"][4] == "おちゃ ください。" and cp["ro"][3] == "mi zu  de su" and cp["ro"][4] == "o cha  ku da sa i")
     out["s4_rows"] = int(d["rows"] == 5); out["s4_footers"] = int(d["sb"] == "block" and d["nn"] == "block" and d["sim"] == "none")
     c = centred(pg, "#status"); out["s4_centred"] = int(c["gapDiff"] <= 1 and c["inside"] == 1)
     click("#status .notnow")
@@ -901,6 +1133,9 @@ def colearn(a, pg):
     ov = pg.evaluate("()=>[document.querySelector('#colearn .ov .st-days span').textContent, document.querySelector('#colearn .ov .st.combo > span:last-child').textContent, getComputedStyle(document.querySelector('#colearn .ov .combo')).display, document.querySelector('#colearn .ov .cmb').textContent]")
     out["day_singular"] = int(ov[0] == "day together"); out["combo_shown_at_zero"] = int(ov[2] != "none" and ov[3] == "0" and ov[1] == "quizzes in a row")
     out["four_badges"] = int(d["badges"] == 4); out["scores"] = int(d["you"] == "5" and d["otis"] == "5"); out["avatar_44"] = int(abs(d["av"] - 44) < 1); out["no_sim"] = int(not d["sim"]); out["end_small_last"] = int(d["endLast"] == 1 and d["endFont"] <= 12.5)
+    pg.evaluate("()=>document.querySelector('#colearn .end').scrollIntoView({block:'center'})"); pg.wait_for_timeout(100); r0 = pg.evaluate("()=>{const r=document.querySelector('#colearn .end').getBoundingClientRect(); return [r.left+r.width/2, r.top+r.height/2]}"); pg.mouse.click(r0[0], r0[1]); pg.wait_for_timeout(200)
+    out["stop_is_fork"] = int(pg.evaluate("()=>document.getElementById('oos').classList.contains('open') && document.querySelector('#oos .msg').textContent==='Not in this demo — removing a buddy keeps your progress' && SCENARIO.pairStatus==='active'"))
+    out["stop_popup_above_and_on_stage"] = int(pg.evaluate("()=>{const o=document.getElementById('oos').getBoundingClientRect(); const e=document.querySelector('#colearn .end').getBoundingClientRect(); return o.bottom<=e.top+1 && o.bottom<=852 && o.top>=59}")); pg.mouse.click(200, 100); pg.wait_for_timeout(100)
     def click_turn():
         r = pg.evaluate("()=>{const r=document.querySelector('#colearn .turn').getBoundingClientRect(); return [r.left+r.width/2, r.top+r.height/2]}"); pg.mouse.click(r[0], r[1]); pg.wait_for_timeout(250)
     pg.evaluate("()=>applyPreset('A18')"); pg.evaluate("()=>setState({overlay:'colearning'})"); pg.wait_for_timeout(150); click_turn(); out["turn_to_state3"] = int(pg.evaluate("()=>SCENARIO.overlay==='status' && document.getElementById('status').dataset.state==='sentback'"))
@@ -1077,7 +1312,7 @@ CHECKS = [
      trophy, {"cx": (196.7, 2), "cy": (741.1, 2)}),
     ("menu panel", "A0", "()=>{SCENARIO.overlay='courseMenu'; renderMenu()}",
      menu_panel, {"bottom": (613.6, 2)}),   # 548.3 + 65.30 LEARN WITH A FRIEND row
-    ("feed plate", "A3", None, feed_plate, {"cx": (FP[0], 2), "cy": (FP[1], 2)}),
+    ("feed plate", "A3", None, feed_plate, {"cx": (301.33, 2), "cy": (166.5, 2)}),
     # cx catches the row sliding: it is centred on the composite (Sept 11),
     # not spanning it, and nothing else would notice it moving.
     ("feed flag", "A3", None, feed_flag, {"w": (44.00, 2), "h": (34.00, 2), "cx": (301.33, 2),
@@ -1085,6 +1320,10 @@ CHECKS = [
       # height needs a probe, or a numeral back at its old cap passes.
       "num_h": (33.33, 2), "num_cx": (340.17, 2)}),
     ("feed pair", "A3", None, feed_pair, {"cx": (FD[0], 2), "cy": (FD[1], 2), "w": (FD[2], 2), "corner": (0, 1.5)}),
+    ("desktop panel", "A0", None, desktop_panel, {k: (1, 0) for k in ("panel_hidden_below_1100", "panel_shown_from_1100", "stage_identical_across_threshold", "frame_on_scaled", "panel_rerenders", "fit_capped_at_1", "frame_full_bleed_at_430", "iframe_size_no_panel_no_frame")}),
+    ("feed slots", "A0", None, feed_slots, {**{f"{k}_card_top": (130.0, 1) for k in ("A_before", "B")}, **{f"{k}_card_w": (329.3, 1.5) for k in ("A_before", "B")},
+     **{f"{k}_{n}": (1, 0) for k in ("A_before", "B") for n in ("no_score_flag", "no_pair", "dani_under", "promo_on_top")}, **{f"{k}_next_div_c": (449.3, 1) for k in ("A_before", "B")},
+     "A_after_card_top": (420.1, 1), "A_after_score_flag": (1, 0), "A_after_next_div_c": (739.4, 1), "A_after_score_on_top": (1, 0), "first_open_decoded": (1, 0)}),
     # Stage 2: partner marker on A7. First node, ringed, under the banner: the
     # ladder floors at 20 degrees and the pin shrinks to body 28 (r 14) to clear
     # the banner's 187.7 bottom by >= 4. h = intended 35 at that size.
@@ -1154,10 +1393,11 @@ CHECKS = [
     ("assets load", "A1", None, assets_load, {"missing": (0, 0), "unloadable": (0, 0)}),
     ("walk A, 24 beats", "A0", None, walk_A, {k: (1, 0) for k in ["b2_course_menu", "b3_course_selection", "b4_friends", "b5_solo_path", "b6_accepted", "b7_layer", "b8_clv", "b9_node_popup", "b10_path_send", "b11_typesel", "b12_question", "b13_confirm", "b14_path_waiting", "b15_status_waiting", "b16_answered", "b17_path_answer", "b18_state3", "b19_his_question", "b20_state4", "b21_path_send", "b22_score6_popup", "b23_milestone", "b23b_path", "b24_feed"]}),
     ("walk B, 13 beats", "B2", None, walk_B, {k: (1, 0) for k in ["b1_solo_no_rings", "b2_course_menu", "b3_friends", "b3_otis_score_shown", "b4_sheet", "b4b_pending", "b5_her_path", "b6_accepted", "b7_rings_and_marker", "b8_clv", "b9_first_ringed_popup", "b10_review_marker_stays", "b11_last_ringed_popup", "b12_review_all", "b13_her_node_popup", "b13_complete_lesson"]}),
-    ("intro popup + picker", "A1", None, intro_popup, {"open_on_load": (1, 0), "frame_green_dashed": (1, 0), "other_chrome_white": (1, 0), "tag": (1, 0), "title_green": (1, 0), "sub_ok": (1, 0), "card_313": (1, 0), "lines_held": (1, 0), "tag_on_corner": (1, 0), "tag_clears_title_ink": (1, 0), "rows_verbatim_one_line": (1, 0), "pill_start_here_green": (1, 0), "note_quiet": (1, 0), "no_pink_in_chrome": (1, 0), "pick_B_beat1": (1, 0), "bar_green": (1, 0), "selected_green": (1, 0), "others_neutral": (1, 0), "picker_collapsed": (1, 0), "reset_to_beat1": (1, 0), "reset_B_to_B2": (1, 0)}),
+    ("profile turn 1", "A0", None, profile_turn1, {k: (1, 0) for k in ["A_tab_opens_sheet", "A_sheet_fork_clears_profile_row", "A_profile_from_beat1", "B_tab_opens_sheet", "B_sheet_fork_clears_profile_row", "B_profile_from_beat1", "B_courses_japanese_only", "A0_courses_korean_score_kr10", "score_flag_visible_in_box", "otis_covered_in_friend_streaks", "A_after_invite_courses_both_score_ja5", "A_score6_after_milestone", "single_cta_stays_filled_after_select", "banner_one_asset", "edit_hidden_when_empty", "live_stats", "league_xp_static", "section_below_friend_streaks", "no_pair_five_placeholders", "slot_pitch", "header_at_24", "manage_crop_at_captured_box", "placeholders_one_crop", "otis_cover_on_ink_centre", "plus_to_single_cta", "x_back_to_profile", "pending_slot_mark_no_flag", "pending_to_manage", "manage_structure", "edit_to_done_remove", "remove_is_fork", "invite_row_to_single_cta", "friends_back_keeps_origin", "x_back_to_manage", "manage_x_to_profile", "paired_slot_flag_no_mark", "paired_to_colearning", "manage_link", "course_tab_back", "menu_keeps_both_ctas", "x_back_to_menu", "complete_exits_to_path", "course_rows_fork_clear_of_japanese", "manage_on_header_line", "section_air_captured", "promo_when_no_pair", "promo_at_slot", "promo_body_inert", "promo_to_course_selection", "promo_x_returns_blue", "overview_air_kept", "cover_occludes_alone", "milestone_shared_score", "scroll_reset_on_preset", "paired_routes_fork", "promo_hidden_when_paired", "feed_tab_from_beat1_both", "feed_promo_body_inert", "feed_hit_on_cta", "feed_promo_to_course_selection", "x_back_to_feed", "no_placeholder_markers"]}),
+    ("intro popup + picker", "A1", None, intro_popup, {"open_on_load": (1, 0), "frame_green_dashed": (1, 0), "other_chrome_white": (1, 0), "tag": (1, 0), "title_white": (1, 0), "sub_ok": (1, 0), "card_343": (1, 0), "blur_backdrop": (1, 0), "popup_cr_rhythm": (1, 0), "popup_type_scale": (1, 0), "lines_held": (1, 0), "pill_in_corner": (1, 0), "rows_verbatim_one_line": (1, 0), "pill_start_here_green": (1, 0), "note_quiet": (1, 0), "no_pink_in_chrome": (1, 0), "pick_B_beat1": (1, 0), "bar_green": (1, 0), "selected_green": (1, 0), "others_neutral": (1, 0), "menu_full_width_under_bar": (1, 0), "menu_rows_cr_geometry": (1, 0), "menu_type_scaled": (1, 0), "picker_collapsed": (1, 0), "reset_to_beat1": (1, 0), "reset_B_to_B2": (1, 0)}),
     ("feed to path", "A3", None, feed_to_path, {"feed_tab_live": (1, 0), "to_feed": (1, 0), "back_to_paired_path": (1, 0), "A3_back_paired": (1, 0), "solo_feed_not_live": (1, 0), "B_feed_never_live": (1, 0), "no_score_under_5": (1, 0)}),
     ("A16-A20 receiver loop", "A16", None, receiver_loop, {"sent_back": (1, 0), "type_differs": (1, 0), "state3": (1, 0), "s3_no_rows": (1, 0), "s3_no_control": (1, 0), "s3_countdown": (1, 0), "s3_clock": (1, 0),
-      "s3_answer_cta": (1, 0), "s3_centred": (1, 0), "answer_to_question": (1, 0), "energy_before": (20, 0), "state4": (1, 0), "energy_15": (1, 0), "combo_2": (1, 0), "s4_rows": (1, 0), "s4_footers": (1, 0),
+      "s3_answer_cta": (1, 0), "s3_centred": (1, 0), "answer_to_question": (1, 0), "energy_before": (20, 0), "state4": (1, 0), "energy_15": (1, 0), "combo_2": (1, 0), "state4_sub_copy": (1, 0), "report_five_sentences": (1, 0), "s4_rows": (1, 0), "s4_footers": (1, 0),
       "s4_centred": (1, 0), "notnow_to_path": (1, 0), "sendback_to_typesel": (1, 0)}),
     ("type cells, all eight", "A13", None, type_cells, {"bad_cells": (0, 0), "cells_checked": (40, 0)}),
     ("A4-A6 / B3-B5 invite flow", "A0", None, invite_flow, {"friends_open": (1, 0), "friends_dark": (1, 0), "title_ok": (1, 0), "course_flag": (1, 0), "no_counter": (1, 0), "list_above_options": (1, 0), "cta_off_before": (1, 0),
@@ -1170,7 +1410,7 @@ CHECKS = [
       "share_fork": (1, 0), "continue_to_path": (1, 0), "fires_from_score6": (1, 0)}),
     ("A8 co-learning view", "A8", None, colearn, {"open": (1, 0), "hdr_pink": (1, 0), "hdr_full_bleed": (1, 0), "page_dark": (1, 0), "x_own_row_above": (1, 0), "x_paints": (1, 0), "no_header_text": (1, 0), "buddy_quest": (1, 0), "countdown": (1, 0),
       "figures_right": (1, 0), "hero_in_header": (1, 0), "bq_28_cd_15": (1, 0), "block_centred": (1, 0), "band_figures_card_unmoved": (1, 0), "clock_13": (1, 0), "counter_readable": (1, 0), "headers": (1, 0), "one_margin": (1, 0), "turn_locked_row": (1, 0), "turn_locked_inert": (1, 0), "locked_copy_one_line": (1, 0), "days_1_icon": (1, 0), "ov_one_line": (1, 0), "fig_ink_on_card_edge": (1, 0), "fig_below_x_row": (1, 0), "card_over_bottom_edge_only": (1, 0), "hdr_compact": (1, 0), "sections_double": (1, 0), "calendar_icon": (1, 0), "day_singular": (1, 0), "combo_shown_at_zero": (1, 0),
-      "four_badges": (1, 0), "scores": (1, 0), "avatar_44": (1, 0), "no_sim": (1, 0), "end_small_last": (1, 0), "turn_to_state3": (1, 0), "turn_to_waiting": (1, 0), "turn_to_typesel": (1, 0),
+      "four_badges": (1, 0), "scores": (1, 0), "avatar_44": (1, 0), "no_sim": (1, 0), "end_small_last": (1, 0), "stop_is_fork": (1, 0), "stop_popup_above_and_on_stage": (1, 0), "turn_to_state3": (1, 0), "turn_to_waiting": (1, 0), "turn_to_typesel": (1, 0),
       "combo_tracks": (1, 0), "month_capped_19": (1, 0), "B_scores_10_10": (1, 0), "marker_opens": (1, 0), "x_closes": (1, 0)}),
     ("feed after status", "A3", None, feed_after_status, {"overlays_open": (0, 0), "pair_l": (269.13, 1), "pair_t": (186.58, 1), "pair_w": (92.07, 1), "ringed_source": (1, 0)}),
     ("A2 no control at rest", "A2", None, slot, {"btn": (0, 0), "bub": (0, 0)}),

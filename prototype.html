@@ -21,8 +21,14 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html, body {
-  background: #0d1116;
+html { background: #0D1416; }
+body {
+  /* the framed page (Jamie, Sept 28): a dark diagonal gradient behind the
+     device — the middle stop is the app's own page token, the ends add
+     depth (a faint green cast easing into near-black); CR's treatment in
+     Duolingo hues. Flat #0D1416 below 430, where the app is full-bleed and
+     the page only shows in the safe-area insets. */
+  background: linear-gradient(135deg, #1B2A22 0%, #151F23 50%, #0D1416 100%);
   font-family: var(--font-family);
   -webkit-font-smoothing: antialiased;
   display: flex; align-items: center; justify-content: center;
@@ -30,7 +36,56 @@ html, body {
 }
 
 /* ---- scale-to-fit wrapper: the ONLY place scaling happens ---- */
-#fit { position: relative; }
+#fit { position: relative; overflow: hidden; border-radius: calc(42px * var(--fit, 1)); background: #0D1116; }
+
+/* ---- DEVICE FRAME (Sept 28). The retired shell's bezel, moved into the
+   file that survives: index.html iframed this file and is gone, so the
+   frame lives here, OUTSIDE the stage — a sibling ring behind #fit, the
+   island over it, #fit itself rounded and clipping the way the shell's
+   .screen did. Every dimension is the shell's, scaled by --fit (the
+   shell scaled the whole phone with a transform; here #fit is sized to
+   the scaled stage and the ring follows it). Full-bleed at <= 430:
+   no rounding, no shadow, no notch — which is how the showcase's 393-wide
+   iframe sees it, so its own bezel is the only one visible.
+   The island is drawn shallow (top 8, 24 tall) to clear the picker's
+   label at y 37-53, as in the shell. ---- */
+#device { position: relative; }
+#device .bezel { position: absolute; inset: calc(-14px * var(--fit, 1)); border-radius: calc(56px * var(--fit, 1)); background: #1C1C1E;
+  box-shadow: 0 calc(30px * var(--fit, 1)) calc(70px * var(--fit, 1)) rgba(0, 0, 0, 0.30), 0 calc(8px * var(--fit, 1)) calc(22px * var(--fit, 1)) rgba(0, 0, 0, 0.18), inset 0 0 0 calc(2px * var(--fit, 1)) #2A2A2D; }
+#device .bezel::before { content: ""; position: absolute; left: calc(-3px * var(--fit, 1)); top: calc(150px * var(--fit, 1)); width: calc(3px * var(--fit, 1)); height: calc(34px * var(--fit, 1));
+  border-radius: calc(2px * var(--fit, 1)) 0 0 calc(2px * var(--fit, 1)); background: #2A2A2D; box-shadow: 0 calc(64px * var(--fit, 1)) 0 #2A2A2D, 0 calc(124px * var(--fit, 1)) 0 #2A2A2D; }
+#device .bezel::after { content: ""; position: absolute; right: calc(-3px * var(--fit, 1)); top: calc(210px * var(--fit, 1)); width: calc(3px * var(--fit, 1)); height: calc(70px * var(--fit, 1));
+  border-radius: 0 calc(2px * var(--fit, 1)) calc(2px * var(--fit, 1)) 0; background: #2A2A2D; }
+#fit .island { position: absolute; left: 50%; top: calc(8px * var(--fit, 1)); width: calc(112px * var(--fit, 1)); height: calc(24px * var(--fit, 1)); margin-left: calc(-56px * var(--fit, 1));
+  border-radius: calc(12px * var(--fit, 1)); background: #000; pointer-events: none; z-index: 2; }
+@media (max-width: 430px) {
+  html, body { background: #0D1416; }
+  #device .bezel, #fit .island { display: none; }
+  #fit { border-radius: 0; }
+}
+
+/* ---- DESKTOP HAPPY-PATH PANEL (Jamie, Sept 28; CR's .info-panel pattern).
+   Chrome OUTSIDE the stage: hidden by default, shown only from 1100px,
+   fixed at left 24 and 260 wide, with the device wrapper (body) padded 320
+   on the left so the phone centres in what remains; fit() subtracts the
+   same 320 from its width term. Below 1100 — including the showcase
+   iframe at exactly 393 × 852 — neither the panel nor the gutter exists.
+   Content re-renders on every applyPreset (path switch and Reset). ---- */
+#info { display: none; }
+@media (min-width: 1100px) {
+  body { padding-left: 320px; }
+  #info { display: block; position: fixed; left: 24px; top: 50%; transform: translateY(-50%); width: 260px;
+          max-height: calc(100vh - 48px); overflow-y: auto; scrollbar-width: none; box-sizing: border-box;
+          padding: 20px 18px 16px; border-radius: 16px; background: #151F23; border: 1px solid rgba(255,255,255,0.08);
+          color: var(--text-primary); font-family: var(--font-family); }
+  #info::-webkit-scrollbar { display: none; }
+}
+#info .ttl { font-size: 12px; font-weight: var(--font-weight-bold); letter-spacing: 1.4px; color: var(--green-face); text-transform: uppercase; line-height: 16px; }
+#info .state { margin-top: 5px; font-size: 12px; line-height: 16px; font-weight: var(--font-weight-body); color: var(--text-secondary); }
+#info ol { list-style: none; margin: 14px 0 0; padding: 0; counter-reset: step; }
+#info li { position: relative; padding-left: 24px; margin-top: 7px; font-size: 12.5px; line-height: 17px; font-weight: var(--font-weight-body); color: var(--text-primary); counter-increment: step; }
+#info li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 17px; height: 17px; border-radius: 50%; background: rgba(120,201,60,0.16); color: var(--green-face); font-size: 10px; font-weight: var(--font-weight-bold); line-height: 17px; text-align: center; }
+#info .foot { margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 10.5px; line-height: 14px; font-weight: var(--font-weight-body); color: var(--text-secondary); }
 .stage {
   position: absolute; top: 0; left: 0;
   width: 393px; height: 852px;
@@ -40,6 +95,10 @@ html, body {
   overflow: hidden;
   color: var(--text-primary);
   font-weight: var(--font-weight-bold);
+  /* TOUCH CORRECTNESS, not affordance (Jamie, Sept 28): no grey iOS tap
+     flash over cropped assets; no double-tap zoom mid-walkthrough (pinch
+     and pan stay); text never selects on a long press */
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; -webkit-user-select: none; user-select: none;
 }
 
 /* ---- iOS safe area (status bar not reproduced — see notes) ---- */
@@ -107,23 +166,53 @@ html, body {
    narrowest at which Path A's title clears the right-aligned "Start here"
    pill by 4 (the row's 1.5 border counts); 313 would overlap by 15. The subtitle was shortened to "Learn a course with a friend." so it
    stays one line at this width; no font, padding, icon or rhythm change. ---- */
-#intro { position: absolute; left: 0; top: 0; width: 393px; height: 852px; z-index: 30; display: none; background: rgba(0,0,0,0.55); }
+/* INTRO POPUP, rebuilt Sept 28 against CR_Example_Scenario_Popup_Intro
+   (measured at 1.8168 px/CSS; Jamie's analysis round). What changed and
+   why: the type scale was compressed (22:14:14:13:11 against CR's
+   21:14:12:11:8.6), the air sat in the wrong places (title->subtitle 18
+   where CR has 11; rows 10 apart where CR has 20), five green things so
+   nothing was the accent, rows taller than CR's carrying smaller tiles, a
+   pill louder than the subtitle, and an opaque card on a flat dim where
+   CR's is translucent over a blurred app. Now: card 343 (25 margins,
+   CR's 24.8) radius 20, the frame an SVG rect so the dash pattern is
+   CR's 4.4 on / 1.7 off at 2 px; the dim blurs the app and the card is
+   90% opaque (blur 20); title 21 WHITE (green stays on the tag, tiles, pill and
+   frame — Jamie, Sept 28), subtitle 12, row sub 11, note 9, pill 8.5 in
+   a 14-tall pill; rhythm: tag cap 29 below the frame, tag->title 19,
+   title->sub 11, sub->rows 25, rows 58 tall inset 27 and 20 apart at
+   radius 8, tiles 40 at radius 10 inset 13, last row->note 24, note->
+   frame 30. Margins derived from Nunito's metrics (cap 0.705 em, normal
+   line box 1.364 em) so the INK lands at those distances. Card width:
+   built at 343 for Jamie to judge inside the bezel; 313 is the fallback. */
+#intro { position: absolute; left: 0; top: 0; width: 393px; height: 852px; z-index: 30; display: none; background: rgba(0,0,0,0.55);
+         -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }   /* 20, CR's strength (Sept 28): at 8 the path behind still competed with the card */
 #intro.open { display: block; }
-#intro .card { position: absolute; left: 40px; right: 40px; top: 50%; transform: translateY(-50%); padding: 22px 18px 18px; border: 1.5px dashed var(--green-face); border-radius: 16px;
-               background: var(--surface-raised); box-shadow: 0 8px 28px rgba(0,0,0,0.55); text-align: center; }
-#intro .tag { font-size: 11px; font-weight: var(--font-weight-bold); letter-spacing: 2px; color: var(--proto-frame); text-transform: uppercase; }
-#intro .ttl { margin-top: 8px; font-size: 22px; font-weight: var(--font-weight-bold); color: var(--green-face); }
-#intro .sub { margin: 6px 0 16px; font-size: 14px; font-weight: var(--font-weight-body); color: var(--text-secondary); }
-#intro .row { position: relative; display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px 12px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.08); cursor: pointer; margin-top: 10px; }
-#intro .row .ico { width: 38px; height: 38px; border-radius: 10px; background: rgba(120,201,60,0.16); display: flex; align-items: center; justify-content: center; flex: none; }
+#intro .card { position: absolute; left: 25px; right: 25px; top: 50%; transform: translateY(-50%); padding: 25px 27px 27px; border-radius: 20px;
+               background: rgba(35,46,53,0.9); background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+               box-shadow: 0 8px 28px rgba(0,0,0,0.55); text-align: center; }
+#intro .frame { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }   /* the dashed frame: stroke 2 centred 1 in from the card's edge, dasharray 4.4 1.7, radius 19 (= 20 - 1) */
+#intro .frame rect { fill: none; stroke: var(--green-face); stroke-width: 2; stroke-dasharray: 4.4 1.7; }
+#intro .tag { font-size: 11px; font-weight: var(--font-weight-bold); letter-spacing: 2px; color: var(--green-face); text-transform: uppercase; }   /* green (Sept 28): CR's arrangement — the accent on the tag, the title white; it was white before, the title green */
+#intro .ttl { margin-top: 8px; font-size: 21px; font-weight: var(--font-weight-bold); color: var(--text-primary); }
+#intro .sub { margin: 0 0 21px; font-size: 12px; font-weight: var(--font-weight-body); color: var(--text-secondary); }
+#intro .row { position: relative; display: flex; align-items: center; gap: 13px; text-align: left; padding: 0 8px 0 13px; height: 58px; box-sizing: border-box; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.08); cursor: pointer; }
+#intro .row .txt { flex: 1; min-width: 0; }
+#intro .row + .row { margin-top: 20px; }
+#intro .row .ico { width: 40px; height: 40px; border-radius: 10px; background: rgba(120,201,60,0.16); display: flex; align-items: center; justify-content: center; flex: none; }
 #intro .row .ico svg { display: block; }
-#intro .row .t { font-size: 14px; font-weight: var(--font-weight-bold); color: var(--text-primary); white-space: nowrap; }   /* 14: "Path A — Fresh Start" beside the pill */
-#intro .row .s { font-size: 13px; font-weight: var(--font-weight-body); color: var(--text-secondary); margin-top: 2px; white-space: nowrap; }
-/* a TAG stuck on the tile's top-right corner (Jamie, Sept 15): hugs the
-   corner over the row's border, small radius; sits high enough that its
-   bottom clears the title's cap line, which frees the title's width */
-#intro .row .pill { position: absolute; right: -2px; top: -8px; padding: 3px 10px; border-radius: 5px; background: rgba(120,201,60,0.18); color: var(--green-face); font-size: 11px; font-weight: var(--font-weight-bold); }
-#intro .note { margin-top: 16px; font-size: 11px; font-weight: var(--font-weight-body); color: var(--text-secondary); line-height: 1.4; }
+#intro .row .t { font-size: 14px; font-weight: var(--font-weight-bold); color: var(--text-primary); white-space: nowrap; }
+#intro .row .s { font-size: 11px; font-weight: var(--font-weight-body); color: var(--text-secondary); margin-top: 2px; white-space: nowrap; }
+/* the "Start here" pill INSIDE the row at its top-right corner — CR's
+   arrangement (Jamie, Sept 28, corrected): its box 7 below the row's top
+   edge and 8 from its right, the title's line below it. Offsets are from
+   the row's OUTER edge (the 1.5 border is inside the padding box). As in
+   CR the pill's bottom (row top + 21) sits below the title's cap top
+   (+15.1) — 5.9 here, 3.8 in CR — and they coexist by horizontal
+   separation: the pill starts 11 to the right of the title's ink (CR
+   ~40). The Sept 15/17 corner-straddling placement was a fix for a
+   collision a 21-tall pill and larger type caused. */
+#intro .row .pill { position: absolute; right: 6.5px; top: 5.5px; padding: 0 8px; height: 14px; line-height: 14px; border-radius: 5px; background: rgba(120,201,60,0.18); color: var(--green-face); font-size: 8.5px; font-weight: var(--font-weight-bold); letter-spacing: 0.3px; }
+#intro .note { margin-top: 21px; font-size: 9px; font-weight: var(--font-weight-body); color: var(--text-secondary); line-height: 1.4; }
 
 /* ---- scenario picker: demo chrome, lives inside the phone frame ---- */
 #scenariobar {
@@ -136,34 +225,51 @@ html, body {
   color: var(--green-face); text-transform: uppercase;
 }
 #scenariobar span::after { content: " \25BE"; }
+/* THE PICKER MENU (rebuilt Sept 28, Jamie: "it isn't a menu"). A real
+   dropdown hangs from its trigger: full width, one surface with the bar
+   (same background, no gap, square corners), a 1 px edge and the build's
+   one blurred shadow at its bottom. Measured off
+   CR_Example_Scenario_Top_Nav_Dropdown at 1.7608 px/CSS (its 692 px
+   screen width): label at x 20, cap 7.4; rows x 12-381, 58 tall, 8 apart,
+   ~8 radius, EVERY row a card (a fill against the panel, a hairline),
+   the selected one the accent wash + border + check; title cap 10.5
+   (15 px), subtitle cap 7.4 (10.5 px -> 11 here, Nunito's x-height), title
+   42.5 from the row's edge, glyph centred 21 in; divider the row's width;
+   Reset 43 tall; 12 under it. Kept from what was settled: the label, both
+   rows with their tiles (28 here, the popup's icons), the divider, Reset
+   with the refresh, green on the bar's title and the selected row only.
+   Deviations from CR: cards are LIGHTER than the panel (CR's are darker;
+   under a page-colour bar the Duolingo idiom is a raised card); the tile
+   is 28 wide where CR's glyph is bare, so the title sits at 50 from the
+   row's edge, 7.5 right of CR's 42.5. */
 #dropdown {
-  position: absolute; top: 59px; left: 8px; width: 377px; z-index: 21;
-  background: #1E2831; border-radius: 14px; padding: 10px; display: none;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.55);
-  max-height: 760px; overflow-y: auto; box-sizing: border-box;   /* scrolls: two preset groups, every state an entry until the final collapse */
+  position: absolute; top: 59px; left: 0; width: 393px; z-index: 21;
+  background: var(--surface-page); padding: 15px 0 12px; display: none;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.55); box-sizing: border-box;
 }
 #dropdown.open { display: block; }
-#dropdown .hd { font-size: 11px; letter-spacing: 1.2px; color: var(--text-secondary);
-                text-transform: uppercase; padding: 4px 8px 8px; }
-#dropdown .row { display: flex; align-items: center; gap: 10px; padding: 9px 10px;
-                 border-radius: 10px; cursor: pointer; }
+#dropdown .hd { font-size: 10.5px; line-height: 14px; letter-spacing: 1.6px; color: var(--text-secondary);
+                text-transform: uppercase; padding: 0 20px; margin-bottom: 9px; }
+#dropdown .row { display: flex; align-items: center; gap: 10px; margin: 0 12px 8px; padding: 0 14px 0 12px; height: 58px; box-sizing: border-box;
+                 border-radius: 9px; background: #1E2831; border: 1.5px solid rgba(255,255,255,0.08); cursor: pointer; }
 /* Demo chrome, outside the fiction: behaves like normal UI, hover included.
    The no-hover rule applies to app surfaces only. */
-#dropdown .row:hover { background: rgba(255,255,255,0.05); }
-/* the CR treatment in Duolingo green (CR_Example_Scenario_Top_Nav_Dropdown):
-   only the SELECTED row is tinted — a translucent wash of the accent, a
-   matching border, the check in the accent; every other row neutral. The
-   picker is a demo control in the phone's top bar on one surface, not
-   dashed chrome. */
-#dropdown .row { border: 1.5px solid transparent; }
-#dropdown .row.on   { background: rgba(120,201,60,0.16); border-color: rgba(120,201,60,0.6); }
-#dropdown .row .t { font-size: 14px; color: var(--text-primary); }
-#dropdown .row .s { font-size: 12px; font-weight: var(--font-weight-body); color: var(--text-secondary); }
-#dropdown .row .tick { margin-left: auto; color: var(--green-face); font-size: 15px; }
-#dropdown .row .ico { width: 32px; height: 32px; border-radius: 9px; background: rgba(120,201,60,0.14); display: flex; align-items: center; justify-content: center; flex: none; color: var(--text-secondary); }   /* the popup's icons, so both surfaces name the same things the same way; Reset's refresh as CR's */
+@media (hover: hover) { #dropdown .row:hover { background: #243039; } }   /* pointer devices only: on touch a hover state would stick to the last tapped row */
+/* the CR treatment in Duolingo green: only the SELECTED row is tinted — a
+   translucent wash of the accent over the panel, a matching border, the
+   check in the accent; every other row a neutral card. The picker is a
+   demo control in the phone's top bar, not dashed chrome. */
+#dropdown .row.on { background: rgba(120,201,60,0.16); border-color: rgba(120,201,60,0.6); }
+@media (hover: hover) { #dropdown .row.on:hover { background: rgba(120,201,60,0.16); } }
+#dropdown .row .t { font-size: 15px; line-height: 19px; color: var(--text-primary); }
+#dropdown .row .s { font-size: 11px; line-height: 14px; margin-top: 1px; font-weight: var(--font-weight-body); color: var(--text-secondary); }
+#dropdown .row .tick { margin-left: auto; color: var(--green-face); display: block; flex: none; }   /* a drawn check, as CR's: 11.4 of ink, its right edge 16 from the row's (a text glyph carried a 4 px side bearing) */
+#dropdown .row .ico { width: 28px; height: 28px; border-radius: 8px; background: rgba(120,201,60,0.14); display: flex; align-items: center; justify-content: center; flex: none; color: var(--text-secondary); }   /* the popup's icons, so both surfaces name the same things the same way; Reset's refresh as CR's */
 #dropdown .row .ico svg { display: block; }
 #dropdown .row.todo .t { color: var(--text-secondary); }
-#dropdown .sep { height: 1px; background: rgba(255,255,255,0.1); margin: 8px 6px; }
+#dropdown .row.reset { height: 43px; margin-bottom: 0; }
+#dropdown .sep { height: 1px; background: rgba(255,255,255,0.1); margin: 0 12px 8px; }
 
 /* ---- Korean lapsed path: flat body, live chrome ---- */
 /* Korean lapsed path. The asset is the whole uncropped screenshot; the
@@ -186,6 +292,13 @@ html, body {
 #feed { position: absolute; left: 0; top: 0; width: 393px; height: 757px; overflow: hidden;
         display: none; z-index: 1; background: var(--surface-page); }
 #feed img { position: absolute; left: 0; top: 0; display: block; }
+/* the promo post sits in a slot window over the composite — first slot
+   (covering the score post) or second, by state; a second window onto the
+   plate carries the next post below it. Geometry: FEED.slots, layoutFeed() */
+#feed .win.slot { z-index: 2; left: 0; width: 393px; }
+#feed .promo { position: absolute; left: 0; top: 0; height: auto; }   /* width set by ink (sizeByInk); inert — the CTA hit below is the only pointer */
+#feed .pwin .hit.cta { position: absolute; cursor: pointer; }
+#feed .body { position: absolute; left: 0; top: 0; width: 393px; height: 396px; overflow: hidden; }   /* through the first post's divider; the composite below is clipped */
 #feed .plate { width: 391.93px; height: auto; }
 #feed .win { position: absolute; left: 0; top: 0; overflow: hidden; }
 .stage.feed .topchrome, .stage.feed .stat { display: none; }
@@ -671,6 +784,165 @@ html, body {
 #milestone .more { position: absolute; left: 0; width: 393px; top: 752px; text-align: center; font-size: 15px; font-weight: var(--font-weight-bold);
                    letter-spacing: var(--tracking-caps); color: var(--white-face); cursor: pointer; line-height: 20px; }
 
+/* THE PROFILE NAV opens a HALF SHEET, not the profile (Jamie, Sept 17;
+   Profile_Nav_Reference): four destinations above the bottom nav — Profile,
+   Kana, Video Call, Practice — the crop used whole (616 px = 393 CSS ->
+   1.567x). Profile is the first row and goes to the profile page; the
+   other three are forks with the out-of-scope popup, each anchored BELOW
+   its own row so the Profile row is never covered. The scrim closes it. */
+#profnav { position: absolute; left: 0; top: 0; width: 393px; height: 757px; z-index: 12; display: none; background: rgba(0,0,0,0.55); }
+#profnav.open { display: block; }
+#profnav .sheet { position: absolute; left: 0; bottom: 0; width: 393px; }
+#profnav .sheet img { display: block; width: 393px; height: auto; }
+#profnav .rows { position: absolute; left: 0; top: 0; width: 393px; height: 100%; }
+#profnav .prow { position: absolute; left: 0; width: 393px; height: 25%; cursor: pointer; }
+#profnav .prow[data-k="profile"] { top: 0; } #profnav .prow[data-k="kana"] { top: 25%; } #profnav .prow[data-k="video"] { top: 50%; } #profnav .prow[data-k="practice"] { top: 75%; }
+/* COURSE SELECTION from the profile side: ONLY WITH A FRIEND, before and
+   after a course is selected, as the FILLED primary — it is the primary
+   action there. Built in CSS at the primary slot (the CONTINUE art has its
+   label baked). Dimmed until a course is selected, like CONTINUE. From the
+   course menu both CTAs stay exactly as they are. */
+#coursesel.single .pri-art, #coursesel.single .hit.cont, #coursesel.single .grp, #coursesel.single .hit.wf { display: none; }
+#coursesel .wfpri { display: none; position: absolute; left: 16.06px; top: 694.23px; width: 362.67px; height: 48.33px; border-radius: 14px; background: var(--green-face); box-shadow: 0 4px 0 #58A522;
+                    text-align: center; line-height: 48.33px; font-size: 15px; font-weight: var(--font-weight-bold); letter-spacing: var(--tracking-caps); color: var(--white-face); cursor: pointer; }
+#coursesel.single .wfpri { display: block; }
+#coursesel.single.sel-none .wfpri { background: var(--border-subtle); box-shadow: none; color: var(--cta-label-disabled); cursor: default; }
+/* PROFILE PAGE (portfolio round, Sept 17). A surface: dark page, top-
+   aligned, scrolls; reachable from the profile nav tab from beat 1 in
+   both paths (no walkthrough beat goes there — it's discoverable, one of
+   the entry points reviewers asked about). Built from the three captures
+   as plates (728 px = 393 CSS, so srcset 1.852x): pt-1 from under the
+   status bar to just above OVERVIEW; pt-2 from OVERVIEW through the
+   Friend Streaks row; our COURSE BUDDIES section; pt-3 from SUPER FAMILY
+   to the bottom. The bottom nav is the app's own. OVERVIEW: STREAK and
+   COURSE SCORE are live from the model (plated over the capture's
+   numbers); LEAGUE and XP stay at the captured values — STATED DEVIATION:
+   they aren't modelled and inventing numbers is worse than static ones.
+   The selected profile tab is a CSS box behind the icon (no captured
+   selected-state asset for that tab). */
+#profile { position: absolute; left: 0; top: 0; width: 393px; height: 757px; z-index: 9; display: none; background: var(--surface-page); overflow: hidden; }
+#profile.open { display: block; }
+#profile .scroll { position: absolute; left: 0; top: 59px; width: 393px; height: 698px; overflow-y: auto; overflow-x: hidden; }
+#profile .plate { position: relative; width: 393px; overflow: hidden; }
+#profile .plate > img { position: absolute; left: 0; width: 393px; height: auto; display: block; }   /* the capture only — the live overlays' own imgs must not inherit the offset */
+#profile .plate.a { height: 631px; }  #profile .plate.a > img { top: -59px; }      /* CSS 59-690 of pt-1 */
+#profile .plate.b { height: 221.6px; } #profile .plate.b > img { top: -124px; }    /* CSS 124-345.6 of pt-2: OVERVIEW + Friend Streaks */
+#profile .plate.c { height: 465px; }  #profile .plate.c > img { top: -292px; }     /* CSS 292-757 of pt-3: SUPER FAMILY to the end */
+#profile .live { position: absolute; top: 33px; height: 24px; background: var(--surface-page); display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: var(--font-weight-bold); color: var(--text-primary); }
+#profile .live.streak { left: 50px; width: 96px; padding-left: 2.9px; }             /* over "21 days" (pt-2 x 52.9-113.9, y 159-177) */
+#profile .live.score { left: 192px; width: 90px; padding-left: 3px; }               /* over the flag + "10" (pt-2 x 195-242) */
+#profile .live.score img { display: block; height: 17px; width: auto; border-radius: 2px; }
+/* Otis is NOT shown in Friend Streaks (Jamie, Sept 17): his captured avatar
+   there is covered with a dashed + so the row reads as empty — a friend
+   streak AND a course buddy is a question the feature doesn't answer */
+#profile .fscover { position: absolute; left: 92px; top: 160px; width: 66px; height: 66px; border-radius: 50%; background: var(--surface-page); box-shadow: 14px 12px 0 -8px var(--surface-page); }   /* his disc and, via the offset shadow, the check badge at the disc's bottom-right; centre (125, 193) in the plate = (125, 317) on the page */
+#profile .fsslot { position: absolute; left: 99px; top: 167px; width: 52px; height: 52px; }
+/* the COURSES row reads the model, not the capture: A before the invite
+   Korean only, after it Korean + Japanese (the course is added at INVITE,
+   the moment WITH A FRIEND adds it); B Japanese only */
+#profile .courses { position: absolute; left: 18px; top: 296px; width: 70px; height: 26px; background: var(--surface-page); display: flex; align-items: center; gap: 6px; padding-left: 4px; box-sizing: border-box; }
+#profile .courses img { display: block; height: 17px; width: auto; border-radius: 2px; }
+/* THE PROFILE PROMO TAKES THE APP'S PROMO SLOT (Jamie, Sept 28): the page has
+   one promo slot — the blue "Earn new suits by doing lessons!" card at the
+   top of pt-1. Ours takes it over while no pair exists (and no invite is
+   out, as built); the blue card returns once a pair exists. Not a second
+   promo, not a new position.
+   The blue card in pt-1 (file px / 1.8524): face x 44.25-678.87, top edge
+   887 (a highlight row), a 1 px dark-blue outline at cols 43 and 680 and
+   row 1216 -> CSS face 23.89-366.48 (342.59 wide), top 478.8, outline
+   bottom 657.0. The cover is page colour (the profile's own precedent:
+   .fscover, .live) over the card's full box with 4 px of margin a side,
+   19-372 x 474.8-661.3, page coords; plate a's img sits at -59, so
+   plate-local = page - 59. Nothing else of the capture lies inside it
+   (ADD FRIENDS ends at 461.6, OVERVIEW starts at 695).
+   The pink card is placed by INK at the face's left and top edge and
+   sized WIDTH-DRIVEN to the slot: the slot's width (24 margins) is a
+   property of the slot, the card's height follows its content. Ink
+   519.25 x 249.25 asset px -> 342.59 x 164.45. That leaves it 13.75
+   shorter than the blue card, so plate a is cut 13.75 shorter in the
+   no-pair state and OVERVIEW keeps the captured 38 under the card instead
+   of a hole; plate b's overlays are plate-relative and don't move.
+   Stated consequence: at the slot's width the card's type and CTA render
+   ~7% smaller than the app's promo type (Jamie's asset was cut for a
+   wider card); re-cutting is hers if it matters.
+   TAPS: only GET STARTED (-> course selection, profile origin) and the X
+   (dismisses for the session: the blue card returns; Reset restores).
+   The rest of the card is inert. Hit boxes from the asset, at the card's
+   0.65978 CSS/asset px: the CTA's white face + 3D edge x 28-493, y
+   156-223; the X glyph at (486-497, 15-30), given a 40 x 32 corner box. */
+#profile .plate.a .pslot { display: none; }
+#profile.nopair .plate.a .pslot { display: block; }
+#profile.nopair .plate.a { height: 617.25px; }
+#profile .pslot .pcover { position: absolute; left: 19px; top: 415.8px; width: 353px; height: 186.5px; background: var(--surface-page); }   /* the blue card's FULL box (outline incl.: 23.2-367.7 x 478.8-657.0) grown 4 px a side (Jamie, Sept 28: a hairline of the card's right/bottom edge showed past a sub-pixel margin); occlusion is the cover's job, the pink card is content on top */
+#profile .pslot .promo { position: absolute; left: 23.89px; top: 419.8px; height: auto; }   /* width by ink (sizeByInk) */
+#profile .pslot .hit { position: absolute; cursor: pointer; }
+#profile .pslot .hit.pcta { left: 42.36px; top: 522.72px; width: 306.80px; height: 44.21px; }
+#profile .pslot .hit.px { left: 326.48px; top: 419.8px; width: 40px; height: 32px; }
+/* COURSE BUDDIES, BELOW Friend Streaks (Jamie, Sept 17): the registry
+   recommends above and flags it unsettled; below is the more defensible
+   call — the page is ordered roughly by how established each feature is,
+   and a new section at the top reads as a product claim rather than a
+   layout choice. Copies Friend Streaks exactly: caps header with MANAGE
+   right-aligned in blue, then a row of 52-dia circles at the captured
+   pitch (centres 57, 128, 200, 272, 344) — avatars first, dashed +
+   placeholders for empty slots. ONE badge corner (bottom-right), the
+   page's own convention: the pending mark while an invite is out, the
+   course flag once paired — never both. Taps: + -> course selection with
+   the profile origin; Otis pending -> the manage page; Otis paired -> the
+   Co-Learning View; MANAGE -> the manage page. */
+/* geometry from the captures (grid read, Sept 17): the section header's
+   ink starts at x 24 like FRIEND STREAKS / SUPER FAMILY; MANAGE is
+   cropped from pt-3's own SUPER FAMILY header (manage-label), its ink
+   305-363 on the header's line; the placeholders are ONE cropped asset (friend-streak-placeholder,
+   the Friend Streaks row's own dashed +) at the row's 52 dia and centres */
+#profile .buddies { padding: 74px 0 61px; }   /* the captured rhythm: 80 from the row above's circles to this header's ink, and 80 from our circles to SUPER FAMILY's ink (pt-3) */
+#profile .buddies .sh { position: relative; height: 18px; font-size: 13px; font-weight: var(--font-weight-bold); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-secondary); }
+#profile .buddies .sh > span:first-child { position: absolute; left: 24px; top: 0; }
+#profile .buddies .sh .manage { position: absolute; left: 301px; top: -2px; height: auto; cursor: pointer; }   /* the crop's ink top on the header's cap line (pt-3: both at y 305); the crop carries a 5px margin */
+#profile .buddies .slots { position: relative; height: 62px; margin-top: 16px; }
+#profile .buddies .slot { position: absolute; top: 4px; width: 52px; height: 52px; border-radius: 50%; cursor: pointer; }
+#profile .buddies .slot.empty img, #profile .fsslot img { display: block; width: 60px; height: 60px; margin: -4px 0 0 -4px; }   /* the crop is 60 CSS with the ring's antialias margin; the ring itself is 52 */
+#profile .buddies .slot img.av { display: block; width: 52px; height: 52px; clip-path: circle(26px at 26px 26px); }
+#profile .buddies .slot img.pend { display: block; width: 52px; height: auto; }          /* otis-pending-invite-icon: his avatar with the pending mark baked at the corner */
+#profile .buddies .slot .flag { position: absolute; right: -4px; bottom: -4px; width: 22px; height: 22px; border-radius: 50%; background: var(--surface-page); display: flex; align-items: center; justify-content: center; }
+#profile .buddies .slot .flag img { display: block; height: 12px; width: auto; border-radius: 2px; }
+#nav .tabbox { position: absolute; width: 44px; height: 44px; border-radius: 12px; border: 2px solid var(--blue-face); box-sizing: border-box; }
+
+/* MANAGE PAGE (Sept 17), from manage-friend-streak-page's structure: a
+   coloured header (pink, X left, title "Course Buddies"), the hero
+   (course-buddy-invite-page-header), then "Your buddies" with EDIT
+   right-aligned — page and section deliberately NOT both titled Course
+   Buddies (the streak page's "Streak" / "Friend Streaks" are different
+   scopes; ours has no broader area) — and the rows: Otis with his state
+   line, then "Invite a buddy" rows (buddy is the user-facing term) with
+   the dashed + icon. EDIT flips to DONE and each occupied row gains a
+   remove control; removing Otis returns the row to empty and clears the
+   pair. An "Invite a buddy" row -> course selection with the manage
+   origin. */
+#manage { position: absolute; left: 0; top: 0; width: 393px; height: 852px; z-index: 11; display: none; background: var(--surface-page); overflow: hidden; }
+#manage.open { display: block; }
+/* ONE asset for the whole banner, nav strip included (Jamie, Sept 17:
+   buddy-invite-header-wo-nav, 616 px = 393 CSS, 250 tall), the X and title
+   drawn over it — one continuous pink by construction */
+#manage .hdr { position: relative; height: 250px; background: #F781CB; overflow: hidden; }
+#manage .hdr .mbanner { position: absolute; left: 0; top: 0; width: 393px; height: auto; }   /* "mbanner", not "banner": .banner is the path's unit banner (z-index 3) and would sit over the X — a class collision like .ring/.days */
+#manage .hdr .qx { position: absolute; left: 16.6px; top: 75px; width: 23px; height: 23.3px; cursor: pointer; z-index: 2; }
+#manage .hdr .title { position: absolute; left: 60px; right: 60px; top: 74px; height: 26px; line-height: 26px; text-align: center; font-size: 19px; font-weight: var(--font-weight-bold); color: var(--white-face); z-index: 2; }
+#manage .sec { display: flex; justify-content: space-between; align-items: center; padding: 22px 16.7px 12px; font-size: 20px; font-weight: var(--font-weight-bold); color: var(--text-primary); }
+#manage .sec .edit { font-size: 13px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--cta-label-blue); cursor: pointer; }
+#manage .list { margin: 0 16.7px; border: 2px solid var(--border-subtle); border-radius: 16px; overflow: hidden; }
+#manage .row { display: flex; align-items: center; gap: 14px; height: 64px; padding: 0 16px; border-top: 2px solid var(--border-subtle); cursor: pointer; }
+#manage .row:first-child { border-top: none; }
+#manage .row .av { width: 44px; height: 44px; border-radius: 50%; flex: none; }
+#manage .row .av img { display: block; width: 44px; height: 44px; clip-path: circle(22px at 22px 22px); }
+#manage .row .av.add img { display: block; width: 44px; height: 44px; }   /* the same cropped placeholder, at the row's avatar size */
+#manage .row .nm { font-size: 17px; font-weight: var(--font-weight-bold); color: var(--text-primary); }
+#manage .row .st { font-size: 14px; font-weight: var(--font-weight-bold); color: var(--text-secondary); margin-top: 2px; }
+#manage .row.invite .nm { color: var(--text-secondary); }
+#manage .row .rm { margin-left: auto; width: 22px; height: 22px; border-radius: 50%; background: #FF4B4B; display: none; align-items: center; justify-content: center; flex: none; }
+#manage .row .rm::before { content: ""; width: 10px; height: 2.5px; background: var(--white-face); border-radius: 2px; }
+#manage.editing .row.otis .rm { display: flex; }
+
 /* CO-LEARNING VIEW (stage 2, Sept 15; §8, registry §5). NOT a quiz
    screen (Jamie): a SURFACE you return to and read, in the streak menu's
    language — dark page, a header row with the white dismiss and a title,
@@ -782,7 +1054,7 @@ html, body {
 #colearn .ov .st .cardico svg { display: block; }
 #colearn .badges { display: flex; gap: 12px; }
 #colearn .badges img { display: block; width: 74.7px; height: 74.7px; }
-#colearn .end { margin: 64px 0 0; text-align: center; font-size: 12px; font-weight: var(--font-weight-bold); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-secondary); }
+#colearn .end { cursor: pointer; margin: 64px 0 0; text-align: center; font-size: 12px; font-weight: var(--font-weight-bold); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-secondary); }
 
 /* THE APP'S BLUE CTA (cta-blue.png measured: 364 x 56 with its edge, blue
    (28,161,236) container-read = the app's #1CB0F6; label white caps) —
@@ -1098,8 +1370,9 @@ html, body {
 </style>
 </head>
 <body>
+<aside id="info" aria-label="Happy path"><div class="ttl"></div><div class="state"></div><ol></ol><div class="foot">Portfolio project by Jamie Chu</div></aside>
 
-<div id="fit"><div class="stage" id="stage">
+<div id="device"><div class="bezel"></div><div id="fit"><div class="stage" id="stage">
 
   <div class="scroller" id="scroller"><div class="path" id="path"></div></div>
   <div id="feed"></div>
@@ -1144,6 +1417,20 @@ html, body {
     <div class="share"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1CB0F6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></div>
     <div class="qcta"><div class="lab">CONTINUE</div></div>
     <div class="more">MORE ABOUT SCORE</div></div>
+  <div id="profnav"><div class="sheet"><img srcset="assets/profile-menu-halfsheet.png 1.567x" alt="">
+    <div class="rows"><div class="prow" data-k="profile"></div><div class="prow" data-k="kana"></div><div class="prow" data-k="video"></div><div class="prow" data-k="practice"></div></div></div></div>
+  <div id="profile"><div class="scroll">
+      <div class="plate a"><img srcset="assets/profile-page-pt-1.png 1.852x" alt=""><div class="courses"></div>
+        <div class="pslot"><div class="pcover"></div><img class="promo" src="assets/course-buddies-profile-promo.png" alt=""><div class="hit pcta"></div><div class="hit px"></div></div></div>
+      <div class="plate b"><img srcset="assets/profile-page-pt-2.png 1.852x" alt="">
+        <div class="live streak"><span class="v"></span></div><div class="live score"><img alt=""><span class="v"></span></div>
+        <div class="fscover"></div><div class="fsslot"><img srcset="assets/friend-streak-placeholder.png 1.852x" alt=""></div></div>
+      <div class="buddies"><div class="sh"><span>Course buddies</span><img class="manage" srcset="assets/manage-label.png 1.852x" alt=""></div><div class="slots"></div></div>
+      <div class="plate c"><img srcset="assets/profile-page-pt-3.png 1.852x" alt=""></div>
+    </div></div>
+  <div id="manage"><div class="hdr"><img class="mbanner" srcset="assets/buddy-invite-header-wo-nav.png 1.567x" alt=""><img class="qx" srcset="assets/close-x-white.png 3x" alt=""><div class="title">Course Buddies</div></div>
+    <div class="sec"><span class="t">Your buddies</span><span class="edit">Edit</span></div>
+    <div class="list"></div></div>
   <div id="colearn">
     <div class="scroll">
       <div class="hdr"><img class="qx" srcset="assets/close-x-white.png 3x" alt="">
@@ -1207,18 +1494,18 @@ html, body {
 
   <div id="oos"><svg class="frame"><path fill="var(--surface-raised)" stroke="var(--proto-frame)" stroke-width="1.5" stroke-dasharray="5 4" stroke-linejoin="round"/></svg><div class="tag">PROTOTYPE</div><div class="msg"></div></div>
 
-  <div id="intro"><div class="card"><div class="tag">PROTOTYPE</div><div class="ttl">Course Buddies</div><div class="sub">Learn a course with a friend.</div>
+  <div id="intro"><div class="card"><svg class="frame" aria-hidden="true"><rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="19" ry="19"/></svg><div class="tag">PROTOTYPE</div><div class="ttl">Course Buddies</div><div class="sub">Learn a course with a friend.</div>
     <div class="row" data-k="A"><div class="ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="var(--green-face)"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"/><path d="M19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2-2.2-.8 2.2-.8z"/></svg></div>
-      <div><div class="t">Path A — Fresh Start</div><div class="s">Both new to the language</div></div><div class="pill">Start here</div></div>
+      <div class="txt"><div class="t">Path A — Fresh Start</div><div class="s">Both new to the language</div></div><div class="pill">Start here</div></div>
     <div class="row" data-k="B"><div class="ico"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--green-face)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M9 3l4 4-4 4"/><path d="M20 17h-9M15 13l-4 4 4 4"/></svg></div>
-      <div><div class="t">Path B — Meet Up</div><div class="s">Both already learning</div></div></div>
+      <div class="txt"><div class="t">Path B — Meet Up</div><div class="s">Both already learning</div></div></div>
     <div class="note">Simulate buttons skip ahead in time.</div></div></div>
   <div id="scenariobar"><span id="v-scenario">A1</span></div>
   <div id="dropdown"></div>
 
-</div></div>
+</div><div class="island"></div></div>
 
-</div></div>
+</div>
 
 <script>
 
@@ -1310,6 +1597,9 @@ const SCENARIO = {
   friendsFrom: null,        // where friend selection was opened from (course selection / course menu)
   startPoint: null,         // "shared" | "beginning" — the sender's choice on the start-point sheet (preset B)
   invitePending: null,      // "otis" once his INVITE is tapped; CONTINUE enables; cleared when the pair forms
+  courseSelFrom: "courseMenu", // "courseMenu" | "profile" | "manage" | "feed" — where course selection was opened from
+  manageEdit: false,        // the manage page's EDIT/DONE state
+  promoDismissed: false,    // the profile promo's X: the app's own promo card returns for the session (Sept 28)
   reviewRange: null,                      // { from, to }
   reviewCleared: 0,
   comboCount: 0,
@@ -1931,7 +2221,7 @@ function place(parent, art, cx, cy, key, cls) { setArt(slot(parent, key ?? art, 
    correctness is guarded by rendered-geometry tripwires in the
    verification harness (tripwires.py), not by file sizes: crops
    legitimately change size when re-taken. */
-for (const art of [...Object.keys(ANCHOR), "feed-content-base", "course-score-flag-feed-icon", "course-score-number-feed-icon", "avatar-pair-icon", "feed-course-score-line", "preseta-first-node-popup", "alt-preseta-first-node-popup", "preseta-first-review-node-popup", "presetb-last-review-node-popup", "ja-s2u2-node-popup", "ja-score-6-locked-node-popup", "scroll-icon-up", "scroll-icon-down", "ja-s2u1", "ja-s2u1extra", "ja-s2u2", "start-course-flow-2", "ja-course-row-source-unselected", "ja-course-row-source-selected", "active-continue-button", "secondary-active-cta-button"]) { const i = new Image(); i.src = `assets/${art}.png`; i.decode?.().catch(() => {}); }
+for (const art of [...Object.keys(ANCHOR), "feed-content-base", "course-score-flag-feed-icon", "course-score-number-feed-icon", "avatar-pair-icon", "feed-course-score-line", "preseta-first-node-popup", "alt-preseta-first-node-popup", "preseta-first-review-node-popup", "presetb-last-review-node-popup", "ja-s2u2-node-popup", "ja-score-6-locked-node-popup", "scroll-icon-up", "scroll-icon-down", "ja-s2u1", "ja-s2u1extra", "ja-s2u2", "start-course-flow-2", "ja-course-row-source-unselected", "ja-course-row-source-selected", "active-continue-button", "secondary-active-cta-button", "course-buddies-feed-post", "course-buddies-profile-promo"]) { const i = new Image(); i.src = `assets/${art}.png`; i.decode?.().catch(() => {}); }
 
 
 /* ============================================================
@@ -2020,10 +2310,15 @@ function renderBottomNav() {
     /* tab switches change activeTab ONLY, so whatever state the path was in
        is what the feed returns to; the feed tab itself opens from the
        paired path once the milestone has fired (score 6) */
-    const toCourse = t.key === "course" && SCENARIO.activeTab === "feed";
-    const toFeed = t.key === "feed" && SCENARIO.activeTab === "course" && SCENARIO.pairStatus === "active" && SCENARIO.courses.japanese.score >= 6 && SCENARIO.id !== "B";   // never in Path B: the feed carries Path A's score-6 post
-    const live = toCourse || toFeed;
-    im.style.cursor = live ? "pointer" : ""; im.onclick = live ? (e => { e.stopPropagation(); setState({ activeTab: toCourse ? "course" : "feed" }); }) : null;
+    const toCourse = t.key === "course" && SCENARIO.activeTab !== "course";
+    const toProfile = t.key === "profile" && SCENARIO.activeTab !== "profile";   // live from beat 1 in both paths: opens the profile nav half sheet
+    const toFeed = t.key === "feed" && SCENARIO.activeTab !== "feed";   // live from beat 1 in both paths (Turn 2): the feed carries the Course Buddies promo post
+    const live = toCourse || toFeed || toProfile;
+    im.style.cursor = live ? "pointer" : ""; im.onclick = live ? (e => { e.stopPropagation(); if (toProfile) setState({ overlay: "profnav" }); else setState({ activeTab: toCourse ? "course" : "feed", overlay: "none" }); }) : null;
+    if (t.key === "profile") {   // the selected state, drawn (no captured asset for this tab selected)
+      let box = nav.querySelector(".tabbox"); if (!box) { box = document.createElement("div"); box.className = "tabbox"; nav.insertBefore(box, nav.firstChild); }
+      box.style.display = SCENARIO.activeTab === "profile" ? "block" : "none"; box.style.left = (t.at[0] - 22) + "px"; box.style.top = (t.at[1] - 757 - 22) + "px";
+    }
   });
 }
 
@@ -2164,8 +2459,10 @@ document.querySelector("#question .settings .donehit").onclick = e => { e.stopPr
    answer; rows 2-5 are FIXTURE PLACEHOLDERS from the same vocabulary. */
 const RESULT_FIXTURE = { you: [1, 1, 0, 1, 1], otis: [1, 0, 0, 1, 1] };
 /* One answer set for every type (Jamie, Sept 15): row 1 is the Bea
-   capture's own answer, rows 2-5 from the same vocabulary. */
-const ANSWERS = [["go ha n  de su", "ごはん です。"], ["mi zu  ku da sa i", "みず ください。"], ["o cha  de su", "おちゃ です。"], ["go ha n  to  mi zu", "ごはん と みず"], ["ku da sa i", "ください。"]];
+   capture's own answer, rows 2-5 from the same vocabulary. Sept 28: five
+   COMPLETE sentences across the unit's two patterns, X です。 and
+   X ください。 — rows 4 and 5 were fragments (no ending; "please" alone). */
+const ANSWERS = [["go ha n  de su", "ごはん です。"], ["mi zu  ku da sa i", "みず ください。"], ["o cha  de su", "おちゃ です。"], ["mi zu  de su", "みず です。"], ["o cha  ku da sa i", "おちゃ ください。"]];
 function renderReport(host, type, result) {
   host.innerHTML = ANSWERS.map(([ro, an], i) => {
     const av = (result.you[i] ? "" : `<img srcset="assets/jamie-mini-circle-avatar.png 3x" alt="">`) + (result.otis[i] ? "" : `<img srcset="assets/otis-mini-circle-avatar.png 3x" alt="">`);
@@ -2205,7 +2502,7 @@ const STATUS_COPY = {
   waiting:     { head: "Waiting on Otis",    sub: "Your five are with him.<br>His answers show up here." },
   answered:    { head: "Otis answered",      sub: "It's his turn to send one back." },
   sentback:    { head: "Otis sent one back", sub: "Your turn. Answer five<br>and see how you both did." },
-  youanswered: { head: "You answered",       sub: "Your turn to send one back." },
+  youanswered: { head: "You answered",       sub: "Your turn.<br>Send when you're ready." },   // Sept 28: keeps the turn state without echoing SEND ONE BACK beneath it; broken at the sentence like the others (it wrapped with "ready." alone)
 };
 /* Otis's pick, at runtime: the next card in the section after the one
    Jamie sent. Never the same type twice in a row. */
@@ -2291,14 +2588,21 @@ function renderFriends() {
   const el = document.getElementById("friends"), open = SCENARIO.overlay === "friends" || SCENARIO.overlay === "startpoint";   // the start-point sheet sits OVER friend selection
   el.classList.toggle("open", open); if (!open) return;
   const hasJa = !!SCENARIO.courses.japanese.enrolled, mine = hasJa ? (SCENARIO.courses.japanese.score || 5) : null;
-  const sc = f => (SCENARIO.id === "A" && f.scoresA) ? f.scoresA : f.scores;
+  /* Otis, once paired: his Japanese score is the LIVE one (partnerCourseScore
+     — it moves with the shared milestone), added to his fixture scores in
+     A (Italian 5 stays) and replacing the fixture's in B; and his pill is
+     off — one pair per person (registry §14), so he can't be invited again.
+     Reachable after pairing via profile -> MANAGE -> Invite a buddy. */
+  const paired = SCENARIO.pairStatus === "active";
+  const sc = f => { const base = (SCENARIO.id === "A" && f.scoresA) ? f.scoresA : f.scores;
+                    return (f.key === "otis" && paired && SCENARIO.partnerCourseScore != null) ? { ...base, japanese: SCENARIO.partnerCourseScore } : base; };
   /* tiers: paired last; then, when Jamie has no Japanese, the no-Japanese rows first (fixture order) and the Japanese rows ascending;
      when she has, the Japanese rows by proximity and the no-Japanese rows after. A stable sort keeps fixture order inside a tier. */
   const key = f => f.paired ? [2, 0] : sc(f).japanese === undefined ? [hasJa ? 1 : 0, 0] : [hasJa ? 0 : 1, hasJa ? Math.abs(sc(f).japanese - mine) : sc(f).japanese];
   const rows = [...FRIENDS].sort((a, b) => { const [x, y] = key(a), [p, q] = key(b); return x - p || y - q; });
   const otisIdx = rows.findIndex(f => f.key === "otis"), pending = SCENARIO.invitePending;
   const flags = f => Object.entries(sc(f)).map(([c, n]) => `<span class="f"><img srcset="assets/${FLAG[c]}.png 3x" alt="">${n}</span>`).join("");
-  const pill = f => f.paired ? `<div class="pill off">Invite</div>` : pending === f.key ? `<div class="pill pending">Pending</div>` : pending ? `<div class="pill off">Invite</div>` : `<div class="pill on">Invite</div>`;
+  const pill = f => (f.paired || (f.key === "otis" && paired)) ? `<div class="pill off">Invite</div>` : pending === f.key ? `<div class="pill pending">Pending</div>` : pending ? `<div class="pill off">Invite</div>` : `<div class="pill on">Invite</div>`;
   el.querySelector(".list").innerHTML = rows.map((f, i) => `<div class="row ${f.paired ? "paired" : ""}" data-k="${f.key}" data-i="${i}">
       <div class="av">${f.avatar ? `<img srcset="assets/${f.avatar}.png 3x" alt="">` : f.name[0]}</div>
       <div><div class="nm">${f.name}</div><div class="sc">${f.paired ? "Already has a buddy for Japanese" : flags(f)}</div></div>${pill(f)}</div>`).join("");
@@ -2324,7 +2628,7 @@ document.querySelector("#friends .bcta").onclick = e => { e.stopPropagation(); i
 document.getElementById("friends").onclick = e => e.stopPropagation();
 document.querySelector("#friends .back").onclick = e => { e.stopPropagation(); setState({ overlay: SCENARIO.friendsFrom || "none" }); };
 document.querySelectorAll("#friends .ftile").forEach(t => t.onclick = e => { e.stopPropagation(); openOOS("finding", t, document.querySelector('#friends .row[data-k="otis"] .pill'), "above"); });
-function toFriendInvite(from) { setState({ overlay: "friends", friendsFrom: from || SCENARIO.overlay }); }
+function toFriendInvite(from) { setState({ overlay: "friends", friendsFrom: from || SCENARIO.overlay }); }   // back -> course selection, which keeps courseSelFrom
 function renderStartPoint() {
   const el = document.getElementById("startpoint"), open = SCENARIO.overlay === "startpoint";
   el.classList.toggle("open", open); if (!open) return;
@@ -2357,6 +2661,62 @@ document.querySelector("#accepted .bcta").onclick = e => {
   CURRENT = to; document.getElementById("v-scenario").textContent = scenarioOf(to).t; buildDropdown(); setState({ ...PRESETS[to].v, overlay: "none", invitePending: null });
 };
 
+/* PROFILE NAV SHEET */
+const PROFNAV_OOS = { kana: "Not in this demo — tap Profile", video: "Not in this demo — tap Profile", practice: "Not in this demo — tap Profile" };
+function renderProfNav() { document.getElementById("profnav").classList.toggle("open", SCENARIO.overlay === "profnav"); }
+document.getElementById("profnav").onclick = e => { e.stopPropagation(); setState({ overlay: "none" }); };   // the scrim closes
+document.querySelectorAll("#profnav .prow").forEach(r => r.onclick = e => { e.stopPropagation();
+  if (r.dataset.k === "profile") setState({ overlay: "none", activeTab: "profile" });
+  else openOOS("profnav_" + r.dataset.k, r, document.querySelector('#profnav .prow[data-k="profile"]'), "below"); });
+/* PROFILE + MANAGE (Sept 17) */
+const SLOT_CX = [53, 125, 196, 268, 339];   // the Friend Streaks circles' ink centres, read off profile-page-pt-2 on a grid (52 dia, pitch ~72)
+function buddyState() { return SCENARIO.pairStatus === "active" ? "paired" : SCENARIO.invitePending ? "pending" : "none"; }
+function renderProfile() {
+  const el = document.getElementById("profile"), open = SCENARIO.activeTab === "profile";
+  el.classList.toggle("open", open); if (!open) return;
+  const st = SCENARIO.streak?.count || 1; el.querySelector(".live.streak .v").textContent = `${st} day${st === 1 ? "" : "s"}`;
+  /* the course is added at INVITE (the moment WITH A FRIEND adds it), so an
+     invite out or a pair counts as Japanese added and active for the page */
+  const jaAdded = SCENARIO.courses.japanese?.enrolled === true || !!SCENARIO.invitePending || SCENARIO.pairStatus === "active";
+  const course = jaAdded ? "japanese" : (SCENARIO.activeCourse || "japanese"), cs = SCENARIO.courses[course] || {};
+  el.querySelector(".live.score img").srcset = `assets/${course === "korean" ? "kr-course-flag-upper-nav-icon" : "course-flag-upper-nav-icon"}.png 3x`;
+  el.querySelector(".live.score .v").textContent = (course === "japanese" && cs.enrolled === false) ? 5 : (cs.score ?? 5);
+  const courses = SCENARIO.id === "B" ? ["japanese"] : ["korean"].concat(jaAdded ? ["japanese"] : []);
+  el.querySelector(".courses").innerHTML = courses.map(k => `<img srcset="assets/${k === "korean" ? "kr-course-flag-upper-nav-icon" : "course-flag-upper-nav-icon"}.png 3x" alt="">`).join("");
+  const b = buddyState(), slots = el.querySelector(".slots"); el.classList.toggle("nopair", b === "none" && !SCENARIO.promoDismissed);
+  if (!el.dataset.promo) { el.dataset.promo = "1"; sizeByInk(el.querySelector(".pslot .promo"), 342.59, 519.25);
+    el.querySelector(".pslot .hit.pcta").onclick = ev => { ev.stopPropagation(); openCourseSelection("profile"); };
+    el.querySelector(".pslot .hit.px").onclick = ev => { ev.stopPropagation(); setState({ promoDismissed: true }); }; }
+  slots.innerHTML = SLOT_CX.map((cx, i) => {
+    if (i === 0 && b === "pending") return `<div class="slot occ pending" style="left:${cx - 26}px"><img class="pend" srcset="assets/otis-pending-invite-icon.png 1.615x" alt=""></div>`;
+    if (i === 0 && b === "paired") return `<div class="slot occ paired" style="left:${cx - 26}px"><img class="av" srcset="assets/otis-mini-circle-avatar.png 1.615x" alt=""><span class="flag"><img srcset="assets/course-flag-upper-nav-icon.png 3x" alt=""></span></div>`;
+    return `<div class="slot empty" style="left:${cx - 26}px"><img srcset="assets/friend-streak-placeholder.png 1.852x" alt=""></div>`;
+  }).join("");
+  slots.querySelectorAll(".slot.empty").forEach(e => e.onclick = ev => { ev.stopPropagation(); if (b === "paired") openOOS("havebuddy", e, null, "below"); else openCourseSelection("profile"); });
+  const occ = slots.querySelector(".slot.occ"); if (occ) occ.onclick = ev => { ev.stopPropagation(); if (b === "paired") setState({ overlay: "colearning" }); else setState({ overlay: "manage" }); };
+  el.querySelector(".manage").onclick = ev => { ev.stopPropagation(); setState({ overlay: "manage" }); };
+}
+document.getElementById("profile").onclick = e => e.stopPropagation();
+function renderManage() {
+  const el = document.getElementById("manage"), open = SCENARIO.overlay === "manage";
+  el.classList.toggle("open", open); if (!open) return;
+  const b = buddyState(), editing = !!SCENARIO.manageEdit; el.classList.toggle("editing", editing);
+  el.querySelector(".edit").textContent = editing ? "Done" : "Edit";
+  el.querySelector(".edit").style.display = b === "none" ? "none" : "";   // no rows occupied: no EDIT (it would change only its own label)
+  const otis = b === "none" ? "" : `<div class="row otis"><div class="av"><img srcset="assets/otis-mini-circle-avatar.png 3x" alt=""></div><div><div class="nm">Otis TM</div><div class="st">${b === "pending" ? "Request pending" : "Learning Japanese together"}</div></div><div class="rm"></div></div>`;
+  const n = b === "none" ? 5 : 4;
+  el.querySelector(".list").innerHTML = otis + Array.from({ length: n }, () => `<div class="row invite"><div class="av add"><img srcset="assets/friend-streak-placeholder.png 2.2x" alt=""></div><div class="nm">Invite a buddy</div></div>`).join("");
+  el.querySelectorAll(".row.invite").forEach(r => r.onclick = ev => { ev.stopPropagation(); if (b === "paired") openOOS("havebuddy", r, el.querySelector(".row.otis"), "below"); else openCourseSelection("manage"); });
+  /* removal is a FORK everywhere it appears (Jamie, Sept 17): EDIT still flips
+     to DONE and shows the controls; the removal itself opens the popup —
+     the reassurance a reviewer who taps remove is asking for */
+  const rm = el.querySelector(".row.otis .rm"); if (rm) rm.onclick = ev => { ev.stopPropagation(); openOOS("remove", rm, el.querySelector(".edit"), "below"); };
+  const ot = el.querySelector(".row.otis"); if (ot) ot.onclick = ev => ev.stopPropagation();
+}
+document.getElementById("manage").onclick = e => e.stopPropagation();
+document.querySelector("#manage .qx").onclick = e => { e.stopPropagation(); setState({ overlay: "none", manageEdit: false }); };
+document.querySelector("#manage .edit").onclick = e => { e.stopPropagation(); setState({ manageEdit: !SCENARIO.manageEdit }); };
+
 /* MILESTONE + CO-LEARNING VIEW */
 function renderMilestone() {
   const el = document.getElementById("milestone"); el.classList.toggle("open", SCENARIO.overlay === "milestone");
@@ -2384,6 +2744,7 @@ function renderCoLearn() {
 function openCoLearningView() { setState({ overlay: "colearning" }); }
 document.getElementById("colearn").onclick = e => e.stopPropagation();
 document.querySelector("#colearn .qx").onclick = e => { e.stopPropagation(); setState({ overlay: "none" }); };
+document.querySelector("#colearn .end").onclick = e => { e.stopPropagation(); openOOS("remove", e.currentTarget, e.currentTarget, "above"); };   // removal is a fork (Jamie, Sept 17); the control itself is the target, so the card sits above it
 document.querySelector("#colearn .turn").onclick = e => {
   e.stopPropagation(); const cs = SCENARIO.challengeState;
   if (!cs || cs === "none") return;   // locked: inert
@@ -2752,6 +3113,7 @@ function renderPartnerMarker(path, P) {
 let MARKER_STATE = null;   // the placed marker's geometry, for the direction bubble
 function fitScale() { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--fit")) || 1; }
 
+/* portfolio-round assets: profile-page-pt-1 profile-page-pt-2 profile-page-pt-3 buddy-invite-header-wo-nav profile-menu-halfsheet otis-pending-invite-icon manage-label friend-streak-placeholder course-buddies-profile-promo course-buddies-feed-post */
 /* stage 2 assets: avatar-pair-icon avatar-pair-clean jamie-mini-circle-avatar otis-mini-circle-avatar nudge-cta-icon countdown-clock calendar-glyph celebrate-score-duo two-friend-icon-no-bg two-friend-figures monthly-badge-locked-icon see-more-monthly-badge-button nav-back-arrow friend-finding-options spanish-course-flag-icon italy-course-flag-icon kr-course-flag-upper-nav-icon */
 /* SCROLL ANCHORING — two separate things (Sept 11).
    1. THE RULE (global): scrollTop = clamp(bodyY - 406.85, 0, maxScroll),
@@ -2902,6 +3264,35 @@ const FEED = {
      the element is w * 840/839.36 to put the visible ART at w. */
   pair: { art: "avatar-pair-icon", tl: [269.13, 186.58], w: 92.00,
           asset: [840, 476], discs: [[237.91, 237.36, 238.63], [599.96, 237.36, 238.68]] },
+  /* THE PROMO POST'S CELL (Sept 28), CSS px. The plate's dividers, by rows
+     of the 2.0718 file (a divider is five rows, three at full brightness):
+       header divider rows 105-109  -> top 102.69, centre 103.90, bottom 105.10
+       post-1 divider  rows 700-704 -> top 389.88, centre 391.09, bottom 392.30
+     The promo asset at 1.567 (0.63816 CSS per asset px): card top edge at
+     asset row 56.05 -> 35.77; INVITE A BUDDY NOW's bottom edge (the last
+     row of its 3D edge) at 515.0 -> 328.65; card ink x 35.18-551.16.
+     Rhythm of a card-type cell, measured on the two card-post captures:
+       divider centre -> card top      28.76 (Announcement), 29.3 (Learning) -> 29.0
+       button bottom  -> next divider  26.45 (Learning; Announcement's is under the nav)
+     Under the HEADER the first cell sits tighter: Jamie's avatar is 8.91
+     below the header divider's centre (Friend_Quest_Post_Feed_Reference)
+     and 11.83 below a post divider's (the plate's third post) -> 2.9 less,
+     so 26.1 for a card cell in the first slot. INFERRED: no capture shows
+     a card post as the first cell. The windows start at the divider's
+     bottom row so the divider is the plate's own, never redrawn, and the
+     promo's dark meets the plate right under the line.
+     The cell is 26.1 + 292.88 + 26.45 = 345.4 tall against the score
+     post's 287.2 (header centre to post-1 centre) — the plate below is
+     shifted by the difference, which is why the second plate window
+     exists at all. */
+  promo: { cardTop: 35.77, btnB: 328.65, cardW: 329.30, cardAsset: 515.98, k: 1 / 1.567,
+           cta: [36, 441, 335, 515] },   // INVITE A BUDDY NOW's ring incl. its 3D edge, asset px (the only hit on the post)
+  slots: {
+    p1: { t: 389.88, c: 391.09, b: 392.30 },
+    first:  { divC: 103.90, gap: 26.1, winTop: 105.10 },    // under the header: the score post's slot
+    second: { divC: 391.09, gap: 29.0, winTop: 392.30 },    // after the score post
+    gapBelow: 26.45,
+  },
   /* BODY TEXT — "You and Otis TM reached Japanese Score 6!" (Jamie's final
      copy), set entirely from real glyphs, whole words only: nothing is
      constructed letter by letter. All coords PLATE-LOCAL CSS (add plate.x/y).
@@ -2936,10 +3327,22 @@ const FEED = {
     ],
   },
 };
+/* Width-driven by INK: the element's width is chosen so a measured span
+   of the artwork (inkAsset px) lands at inkCSS, whatever padding the file
+   carries — the container copies are trimmed, Jamie's are not. Needs the
+   file's pixel width, so the img uses src (a density srcset makes
+   naturalWidth report the divided size). Applied on load if not yet known. */
+function sizeByInk(img, inkCSS, inkAsset) {
+  const sz = () => { if (img.naturalWidth) img.style.width = (inkCSS * img.naturalWidth / inkAsset).toFixed(3) + "px"; };
+  img.addEventListener("load", sz); sz();
+}
 function renderFeed() {
   const f = document.getElementById("feed");
-  if (f.dataset.built) return;                 // static screen: built once, nothing state-driven on it yet
+  if (f.dataset.built) { layoutFeed(); return; }   // built once; only the slot layout is state-driven (Sept 28)
   f.dataset.built = "1";
+  /* THE FEED PROMO (Turn 2, re-slotted Sept 28): course-buddies-feed-post.
+     A tap goes to course selection with the feed origin; its X returns
+     here. Where it sits is state-driven — see FEED.slots and layoutFeed(). */
   const P = FEED.plate, mk = (cls) => { const i = document.createElement("img"); i.alt = ""; if (cls) i.className = cls; return i; };
   const plate = mk("plate"); plate.src = `assets/${P.art}.png`;
   plate.style.transform = `translate(${P.x}px, ${P.y}px)`; f.appendChild(plate);
@@ -2980,6 +3383,60 @@ function renderFeed() {
     }).join(" ") + "')";                             // two subpaths, nonzero fill = union
     i.style.transform = `translate(${P.tl[0]}px, ${P.tl[1]}px)`; f.appendChild(i);
   }
+  const body = document.createElement("div"); body.className = "body";
+  [...f.children].forEach(c => body.appendChild(c)); f.appendChild(body);
+  /* Two slot windows over the composite (z 2), laid out by layoutFeed():
+     .pwin holds the promo post; .p2win is a second window onto the SAME
+     plate, translated down, so the plate's next post follows the promo's
+     cell instead of showing headless under it (the promo's cell is ~57
+     taller than the score post's — see FEED.slots). */
+  const pw = document.createElement("div"); pw.className = "win slot pwin";
+  const promo = mk("promo"); promo.src = "assets/course-buddies-feed-post.png";   // src, not srcset: naturalWidth must be the file's pixel width for the ink sizing below
+  /* sized by INK, not srcset: the pink card's straight edges are at asset
+     x 35.18 / 551.16 (50% crossings), i.e. 515.98 wide, and land at
+     329.3 CSS whatever padding the file carries (the container copy is
+     trimmed to 592, Jamie's 616) */
+  sizeByInk(promo, FEED.promo.cardW, FEED.promo.cardAsset);
+  pw.appendChild(promo);
+  /* ONLY THE CTA IS TAPPABLE (Jamie, Sept 28): an announcement card, the
+     button is the action. The rest of the post is inert — no pointer, no
+     popup. Hit box = INVITE A BUDDY NOW's outline ring incl. its 3D edge,
+     asset x 36-335, y 441-515, placed against the img's top-left. */
+  const hit = document.createElement("div"); hit.className = "hit cta";
+  Object.assign(hit.style, { left: (FEED.promo.cta[0] * FEED.promo.k).toFixed(2) + "px", width: ((FEED.promo.cta[2] - FEED.promo.cta[0]) * FEED.promo.k).toFixed(2) + "px",
+                             height: ((FEED.promo.cta[3] - FEED.promo.cta[1]) * FEED.promo.k).toFixed(2) + "px" });
+  hit.onclick = e => { e.stopPropagation(); if (SCENARIO.pairStatus === "active") openOOS("havebuddy", hit, null, "above"); else openCourseSelection("feed"); };   // the post persists after pairing (a dated announcement); its CTA forks
+  pw.appendChild(hit); f.appendChild(pw);
+  const p2 = document.createElement("div"); p2.className = "win slot p2win";
+  const pi = mk("plate"); pi.src = `assets/${P.art}.png`; p2.appendChild(pi); f.appendChild(p2);
+  layoutFeed();
+}
+/* WHICH POSTS, AND WHERE (Jamie, Sept 28). The score post is a real event —
+   it exists only once Jamie has reached Japanese score 6, which only Path A
+   does (B's Japanese is 10 throughout; the score-6 event never happens
+   there). So:
+     A before the milestone   promo first, then the plate's posts; no score post
+     A after the milestone    score post first, promo second, then the plate's posts
+     B throughout             promo first, then the plate's posts; no score post
+   The feed stays a clipped composite, not a list: the promo covers the
+   first cell (the score post) entirely in the no-milestone states, and the
+   plate's next post is shown through a second window onto the same plate,
+   shifted down by the height difference between the two cells. */
+function layoutFeed() {
+  const f = document.getElementById("feed"), S = FEED.slots, Q = FEED.promo;
+  const scored = SCENARIO.id === "A" && (SCENARIO.courses.japanese?.score ?? 0) >= 6;   // the event that creates the post
+  const slot = scored ? S.second : S.first;
+  const cardTop = slot.divC + slot.gap;                          // the promo's pink card top, by the app's own rhythm
+  const imgTop = cardTop - Q.cardTop;                            // the asset's top edge (its own padding above the card)
+  const nextDivC = cardTop + (Q.btnB - Q.cardTop) + S.gapBelow;  // where the plate's post-1 divider now lands
+  const p2Top = nextDivC - (S.p1.c - S.p1.t);                    // window B starts at that divider's top row
+  const pw = f.querySelector(".pwin"), p2 = f.querySelector(".p2win");
+  Object.assign(pw.style, { top: slot.winTop + "px", height: (p2Top - slot.winTop).toFixed(3) + "px" });
+  pw.querySelector(".promo").style.transform = `translate(0px, ${(imgTop - slot.winTop).toFixed(3)}px)`;
+  pw.querySelector(".hit.cta").style.top = (imgTop - slot.winTop + Q.cta[1] * Q.k).toFixed(3) + "px";
+  Object.assign(p2.style, { top: p2Top.toFixed(3) + "px", height: (757 - p2Top).toFixed(3) + "px" });
+  p2.querySelector("img").style.transform = `translate(${FEED.plate.x}px, ${(FEED.plate.y + (nextDivC - S.p1.c) - p2Top).toFixed(3)}px)`;
+  f.classList.toggle("scored", scored);
 }
 
 let anchorScroll = 0;
@@ -2987,7 +3444,7 @@ let anchorScroll = 0;
 function render(opts = {}) {
   /* quiz overlays follow SCENARIO.overlay on every render, whatever surface
      is showing — a preset switch to the feed must close an open status */
-  renderTypeSel(); renderQuestion(); renderConfirm(); renderStatus(); renderMilestone(); renderCoLearn(); renderFriends(); renderStartPoint(); renderAccepted();
+  renderTypeSel(); renderQuestion(); renderConfirm(); renderStatus(); renderMilestone(); renderCoLearn(); renderFriends(); renderStartPoint(); renderAccepted(); renderProfile(); renderManage(); renderProfNav();
   const korean  = SCENARIO.activeCourse === "korean";
   const built   = PRESETS[CURRENT].built;
   const feed    = built && SCENARIO.activeTab === "feed";
@@ -3196,7 +3653,8 @@ function renderMenuCta(art) {
     lb.style.color = C.label.colour; lb.style.transform = `translate(${C.label.x}px, ${C.label.y}px)`;
     const [hx0, hy0, hx1, hy1] = C.hit, hit = document.createElement("div"); hit.className = "cta-hit";
     Object.assign(hit.style, { width:`${hx1-hx0}px`, height:`${hy1-hy0}px`, transform:`translate(${hx0}px, ${hy0}px)` });
-    hit.onclick = e => { e.stopPropagation(); if (menuLive("friend")) toFriendInvite("courseMenu"); else openOOS("friendA", hit, art.querySelector('img[data-slot="add-course-menu-icon"]')); };
+    hit.onclick = e => { e.stopPropagation(); if (!menuLive("friend")) openOOS("friendA", hit, art.querySelector('img[data-slot="add-course-menu-icon"]'));
+                         else if (SCENARIO.pairStatus === "active") openOOS("havebuddy", hit, null); else toFriendInvite("courseMenu"); };   // paired: a guard — the flag is never tappable once B is paired (B7+), so this route is closed twice over
     g.append(im, pl, lb, hit); art.appendChild(g);
   }
   g.style.transform = `translate(${(C.at[0] - k[0]).toFixed(3)}px, ${(C.at[1] - k[1]).toFixed(3)}px)`;
@@ -3300,15 +3758,26 @@ const COURSE_SEL = {
   secondary: { art: "secondary-active-cta-button", at: [15.09, 753.11],
                label: { text: "WITH A FRIEND", x: 125.50, y: 17.17 } },   // span; ink +0.67/+0.67, 110.00 x 10.67
 };
-function openCourseSelection() {
-  setState({ overlay: "courseSelection", courseSelected: null }, { anchor: false });
+/* ORIGIN carried in state (Jamie, Sept 17): the course menu's + Course tile,
+   the profile's + slot, or the manage page's invite row. From the profile
+   side the screen shows ONLY WITH A FRIEND — intent is already declared by
+   getting there, so CONTINUE would read as the solo path you didn't ask
+   for; from the course menu it keeps both CTAs. The X returns to the
+   origin; friend selection's back returns here with the same origin;
+   completing the flow ALWAYS exits to the path, whatever the origin. */
+function openCourseSelection(from) {
+  setState({ overlay: "courseSelection", courseSelected: null, courseSelFrom: from || "courseMenu" }, { anchor: false });
 }
 /* The X dismisses back to where the screen was opened from: A0 with the
    course menu open (Jamie, Sept 11). It is a dismiss, so re-entering the
    Add flow starts unselected -- courseSelected is cleared. anchor: false
    keeps the path underneath where it was. */
 function dismissCourseSelection() {
-  setState({ overlay: "courseMenu", courseSelected: null }, { anchor: false });
+  const from = SCENARIO.courseSelFrom || "courseMenu";
+  if (from === "profile") setState({ overlay: "none", courseSelected: null, activeTab: "profile" }, { anchor: false });
+  else if (from === "feed") setState({ overlay: "none", courseSelected: null, activeTab: "feed" }, { anchor: false });
+  else if (from === "manage") setState({ overlay: "manage", courseSelected: null }, { anchor: false });
+  else setState({ overlay: "courseMenu", courseSelected: null }, { anchor: false });
 }
 function selectCourse(course) {
   if (SCENARIO.courseSelected) return;       // one course; tapping a selected row does nothing
@@ -3357,7 +3826,19 @@ function buildCourseSel(el) {
   const cont = mk("div", "hit cont"), [cx, cy] = C.primary.at;
   Object.assign(cont.style, { width: "362.67px", height: "48.33px", transform: `translate(${cx}px, ${cy}px)` });
   cont.onclick = e => { e.stopPropagation(); if (SCENARIO.courseSelected) openOOS("continue", cont, pl); };   // pl: WITH A FRIEND's plate, sized in both states (.grp is 0 x 0; base/clip swap by state)
-  el.append(hit, dis, cont, wf);             // the row's hit stays first in DOM order (".hit" selectors in the harness)
+  /* every other course row is a fork (Jamie, Sept 18): "Not in this demo — tap
+     Japanese", never covering the Japanese row — rows above it anchor below
+     themselves, rows below it anchor above. Rows at the reference's y's
+     (Start_Course_Flow_2): Chess 184, Math 252, Music 319, Spanish 451,
+     French 518, Italian 654; 55 tall. */
+  const wfpri = mk("div", "wfpri"); wfpri.textContent = "WITH A FRIEND";
+  wfpri.onclick = e => { e.stopPropagation(); if (SCENARIO.courseSelected) toFriendInvite("courseSelection"); };
+  el.append(hit, dis, cont, wf, wfpri);      // the row's hit stays first in DOM order (".hit" selectors in the harness)
+  [["chess", 184], ["math", 252], ["music", 319], ["spanish", 451], ["french", 518], ["italian", 654]].forEach(([k, y]) => {
+    const h = mk("div", "hit crow"); Object.assign(h.style, { width: "366.64px", height: "55px", transform: `translate(13.24px, ${y}px)`, cursor: "pointer" });
+    h.onclick = e => { e.stopPropagation(); openOOS("courserow", h, el.querySelector(".hit:not(.crow)"), y < 586 ? "below" : "above"); };
+    el.append(h); });
+
   el.onclick = e => e.stopPropagation();     // everything else on this screen is inert
 }
 function renderCourseSel() {
@@ -3376,6 +3857,7 @@ function renderCourseSel() {
   }
   el.querySelectorAll(".hit")[0].classList.toggle("tap", !sel);   // the row; the X stays tappable
   el.querySelector(".hit.cont").classList.toggle("tap", !!sel);    // CONTINUE: the fork, once active
+  el.classList.toggle("single", (SCENARIO.courseSelFrom || "courseMenu") !== "courseMenu");   // from the profile side: WITH A FRIEND alone
   el.querySelector(".hit.wf").classList.toggle("tap", !!sel);      // WITH A FRIEND: live, once active
 }
 
@@ -3447,7 +3929,7 @@ const POPUP = {
     hit: [16, 94.33, 326.67, 138.33],
     action: () => { const c = JSON.parse(JSON.stringify(SCENARIO.courses));
                     c.japanese.score = 6;
-                    const paired = SCENARIO.pairStatus === "active" ? { partnerProgress: "score6" } : {};   // Otis moves with the score
+                    const paired = SCENARIO.pairStatus === "active" ? { partnerProgress: "score6", partnerCourseScore: 6 } : {};   // a SHARED milestone (Jamie, Sept 28): Otis's position AND his course score move with hers — the post says both reached 6
                     setState({ courses: c, overlay: SCENARIO.pairStatus === "active" ? "milestone" : "none", scrollAnchor: "score6", ...paired }); },   // paired: the shared milestone fires first (§15: between score 6 and the feed)
   },
 };
@@ -3654,12 +4136,16 @@ const OOS = {   // capitalised as the CTA renders, so the reader finds the words
   legendary:"Not in this demo — tap SIMULATE REVIEW",
   mic:      "Not in this demo — tap SIMULATE ANSWER ALL 5",   // the mic button on the two speaking captures
   done:     "Not in this demo — tap END SESSION",             // the settings sheet's DONE
-  nudge:    "Not in this demo — tap Simulate: Otis sends one back",   // PLACEHOLDER string, Jamie to confirm
-  share:    "Not in this demo — tap CONTINUE",                        // the milestone's share square — PLACEHOLDER
-  moreabout:"Not in this demo — tap CONTINUE",                        // MORE ABOUT SCORE — PLACEHOLDER
+  nudge:    "Not in this demo — tap Simulate: Otis sends one back",   // final (Jamie, Sept 17)
+  share:    "Not in this demo — tap CONTINUE",                        // the milestone's share square — final
+  moreabout:"Not in this demo — tap CONTINUE",                        // MORE ABOUT SCORE — final
   inviteother: "Not in this demo — tap INVITE on Otis TM",            // every other row's INVITE (Jamie)
-  finding:  "Not in this demo — tap INVITE on Otis TM",               // the three finding options — PLACEHOLDER
+  finding:  "Not in this demo — tap INVITE on Otis TM",               // the three finding options — final
+  profnav_kana: "Not in this demo — tap Profile", profnav_video: "Not in this demo — tap Profile", profnav_practice: "Not in this demo — tap Profile",   // the profile nav sheet's other rows
+  remove:   "Not in this demo — removing a buddy keeps your progress",   // the manage page's remove control and STOP LEARNING TOGETHER (two lines, on purpose)
+  courserow: "Not in this demo — tap Japanese",                        // the other course rows on course selection
   beginning:"Not in this demo — tap Pick up together",                // the start-point sheet's option 1 (Jamie)
+  havebuddy:"Not in this demo — you already have a buddy",            // EVERY route into the invite flow once a pair exists (Jamie, Sept 28): the profile's placeholders, the manage page's Invite rows, the feed promo's CTA, the course menu's LEARN WITH A FRIEND in B — closing the class (a second pair, two buddies in the section, the cap) rather than one edge case at a time. Before pairing every route is as built.
 };
 const OOS_CARD = { w: 350, gap: 4, caret: { half: 8.3, h: 8 }, r: 14, margin: 12, padTop: 30, padBottom: 12, topLimit: 58 };   // topLimit = the scenario bar's bottom (59), less a hair: the B add tile's card lands at 58.99
 /* key: which string; el: the tapped CTA's hit element, which places the
@@ -3690,7 +4176,10 @@ function openOOS(key, el, target, side = "above") {
     const tl = px(T.left - st.left), tr = px(T.right - st.left), tt = px(T.top - st.top), tb = px(T.bottom - st.top);
     return l < tr && r > tl && t0 < tb && t1 > tt; };
   const order = side === "below" ? ["below", "above"] : ["above", "below"];
-  let pick = order.filter(s => !coversTarget(s));
+  const fits = s => { const t = cardTop(s); return t >= C.topLimit && t + H <= 852; };   // the side with ROOM (Jamie, Sept 18): a card that runs off the stage is no placement
+  let pick = order.filter(s => !coversTarget(s) && fits(s));
+  if (pick.length === 0) pick = order.filter(s => fits(s));
+  if (pick.length === 0) pick = order.filter(s => !coversTarget(s));
   if (pick.length === 0) pick = order;                                   // nothing clears it: keep the preference
   if (pick.length === 2 && pick[0] === "above" && cardTop("above") < C.topLimit) pick = ["below", "above"];
   side = pick[0];
@@ -3731,7 +4220,13 @@ function applyPreset(key) {
   for (const k in base) SCENARIO[k] = base[k];   // also closes any overlay
   for (const k in v) SCENARIO[k] = JSON.parse(JSON.stringify(v[k]));
   document.getElementById("v-scenario").textContent = scenarioOf(key).t;
-  buildDropdown();
+  buildDropdown(); renderInfoPanel();
+  /* every scrollable surface starts at the top on a scenario change (Jamie,
+     Sept 28): the path is anchored by render(); the profile, the Co-Learning
+     View and friend selection scroll, and the profile's plates can be
+     scrolled programmatically (overflow hidden) — a page scrolled in Path A
+     was arriving scrolled in Path B */
+  document.querySelectorAll("#profile .scroll, #profile .plate, #colearn .scroll, #friends .scroll").forEach(e => { e.scrollTop = 0; });
   render({ anchor: true });
 }
 /* THE PICKER, collapsed (Jamie, Sept 15): two entries — Scenario A and
@@ -3750,11 +4245,33 @@ const ICON = {
    internal: the rings arrive with the pair (B7). */
 const SCENARIOS = [{ k: "A0", label: "A", t: "Path A — Fresh Start", s: "Both new to the language" }, { k: "B2", label: "B", t: "Path B — Meet Up", s: "Both already learning" }];
 function scenarioOf(key) { return SCENARIOS.find(sc => (PRESETS[key]?.v.id || key[0]) === sc.label) || SCENARIOS[0]; }   // the bar shows the scenario's name
+/* The happy path per scenario, verified against walk_A / walk_B (Sept 28).
+   A is TEN steps: the acceptance screen arrives by itself ~2 s after
+   Continue on the friend list and its CONTINUE is a required tap (as B's
+   step 5) — the draft omitted it. Steps 9 and 10 are coarse by design:
+   the status screen's simulate controls are labelled, and Score 6 is
+   Not now -> next node -> Simulate -> Continue -> Feed. */
+const HAPPY_PATH = {
+  A: { t: "Path A — Fresh Start", state: "No Japanese yet, Korean at Score 10", steps: [
+        "Tap the course flag, then the + Course tile", "Choose Japanese, tap With a friend", "Tap Invite, then Continue",
+        "Tap Continue on the acceptance screen", "Tap your buddy's marker on the Path", "Open the first node, Simulate complete unit",
+        "Tap the pink tile, pick a quiz type", "Answer the five, then Send", "Tap the tile through the reply and answer back",
+        "Reach Score 6, then open the Feed 🎉"] },
+  B: { t: "Path B — Meet Up", state: "Japanese at Score 10, one unit ahead of your buddy", steps: [
+        "Tap the course flag, then Learn with a friend", "Tap Invite", "Choose Pick up together, tap Send invite",
+        "Tap Continue on the friend list", "Tap Continue on the acceptance screen", "Tap your buddy's marker on the Path",
+        "Open the first ringed node, Simulate review", "Open the last ringed node, Simulate review all", "Tap your own node, Simulate complete lesson"] },
+};
+function renderInfoPanel() {
+  const p = HAPPY_PATH[scenarioOf(CURRENT).label], el = document.getElementById("info");
+  el.querySelector(".ttl").textContent = p.t; el.querySelector(".state").textContent = p.state;
+  el.querySelector("ol").innerHTML = p.steps.map(t => `<li>${t}</li>`).join("");
+}
 function buildDropdown() {
   const d = document.getElementById("dropdown"), cur = scenarioOf(CURRENT);
   d.innerHTML = '<div class="hd">Demo scenarios</div>' + SCENARIOS.map(sc => `<div class="row ${sc === cur ? "on" : ""}" data-k="${sc.k}">
-         <div class="ico">${ICON[sc.label]}</div><div><div class="t">${sc.t}</div><div class="s">${sc.s}</div></div>${sc === cur ? '<div class="tick">&#10003;</div>' : ""}</div>`).join("") +
-    `<div class="sep"></div><div class="row" data-k="__reset"><div class="ico">${ICON.reset}</div><div class="t">Reset scenario</div></div>`;
+         <div class="ico">${ICON[sc.label]}</div><div><div class="t">${sc.t}</div><div class="s">${sc.s}</div></div>${sc === cur ? '<svg class="tick" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1.8 7.6 L5.4 11.2 L12.2 3.2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ""}</div>`).join("") +
+    `<div class="sep"></div><div class="row reset" data-k="__reset"><div class="ico">${ICON.reset}</div><div class="t">Reset scenario</div></div>`;
   d.querySelectorAll(".row").forEach(r => r.onclick = e => {
     e.stopPropagation();
     const k = r.dataset.k;
@@ -3769,7 +4286,18 @@ document.getElementById("scenariobar").onclick = e => {
 document.addEventListener("click", () => document.getElementById("dropdown").classList.remove("open"));
 
 function fit() {
-  const s = Math.min(window.innerWidth / 393, window.innerHeight / 852);
+  /* capped at 1 (Sept 28): a tall desktop window was upscaling the 3x
+     plates. The panel's 320 gutter comes off the width term whenever the
+     panel is shown (the same 1100 threshold as the CSS), so the scale is
+     computed against the width the phone actually has. */
+  const gutter = window.matchMedia("(min-width: 1100px)").matches ? 320 : 0;
+  /* the device frame (on above 430) needs its own room: the bezel overflows
+     the screen by 14 a side (scaled with s) and the page keeps 24 a side, so
+     393s + 28s + 48 <= width and 852s + 28s + 48 <= height. Full-bleed
+     below 430: the stage alone, as before. */
+  const framed = !window.matchMedia("(max-width: 430px)").matches, BEZEL = 14, MARGIN = 24;
+  const s = framed ? Math.min(1, (window.innerWidth - gutter - 2 * MARGIN) / (393 + 2 * BEZEL), (window.innerHeight - 2 * MARGIN) / (852 + 2 * BEZEL))
+                   : Math.min(1, (window.innerWidth - gutter) / 393, window.innerHeight / 852);
   document.documentElement.style.setProperty("--fit", s);
   const w = document.getElementById("fit");
   w.style.width = 393 * s + "px"; w.style.height = 852 * s + "px";
@@ -3777,6 +4305,14 @@ function fit() {
 /* first open: preset A's beat 1 beneath the intro popup; the popup picks the
    scenario and is gone for good (Jamie, Sept 15) */
 applyPreset("A0"); fit();
+/* THE FEED IS BUILT NOW, HIDDEN (Sept 28): built on its first open, the
+   promo post was still undecoded when the surface became visible — the
+   preloaded plate painted first and the score-post composite showed
+   through for a few frames until the promo landed over it (Jamie saw it
+   as a ghost fading out). Building at load lets every feed image load and
+   decode behind the intro popup; the first open then paints once. The
+   slot layout still runs on every open (layoutFeed). */
+renderFeed();
 document.getElementById("intro").classList.add("open");
 document.querySelectorAll("#intro .row").forEach(r => r.onclick = e => { e.stopPropagation(); document.getElementById("intro").classList.remove("open"); applyPreset(r.dataset.k === "B" ? "B2" : "A0"); });
 document.getElementById("intro").onclick = e => e.stopPropagation();

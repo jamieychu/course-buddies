@@ -119,6 +119,33 @@ def derive_two_friend_trim():
     im.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)).save(f"{OUT}/two-friend-figures.png")
 
 
+def derive_friend_streak_placeholder():
+    """The dashed + placeholder cropped from profile-page-pt-2's Friend
+    Streaks row (the third circle, centre (196, 317) CSS, 52 dia; the capture
+    is 1.852 px/CSS), keyed by connected flood. One asset at one size
+    everywhere a placeholder appears (Jamie, Sept 17)."""
+    src = os.path.join(SRC, "profile-page-pt-2.png")
+    if not os.path.exists(src): return
+    S = 728 / 393; cx, cy, r = 196, 317, 30
+    box = (int((cx - r) * S), int((cy - r) * S), int((cx + r) * S), int((cy + r) * S))
+    a = np.array(Image.open(src).convert("RGB").crop(box)).astype(int); alpha = np.full(a.shape[:2], 255, np.uint8)
+    alpha = unflatten(a, alpha, tol=8)
+    Image.fromarray(np.dstack([a.astype(np.uint8), alpha])).save(f"{OUT}/friend-streak-placeholder.png")
+
+
+def derive_manage_label():
+    """MANAGE cropped from profile-page-pt-3's SUPER FAMILY header (ink
+    x 305-363, y 305-317 CSS at 1.852 px/CSS), keyed by flood — the page's
+    own affordance at capture resolution (the manage-button-text upload is
+    low-res and white-blended)."""
+    src = os.path.join(SRC, "profile-page-pt-3.png")
+    if not os.path.exists(src): return
+    S = 728 / 393; box = (int(301 * S), int(300 * S), int(367 * S), int(322 * S))
+    a = np.array(Image.open(src).convert("RGB").crop(box)).astype(int); alpha = np.full(a.shape[:2], 255, np.uint8)
+    alpha = unflatten(a, alpha, tol=8)
+    Image.fromarray(np.dstack([a.astype(np.uint8), alpha])).save(f"{OUT}/manage-label.png")
+
+
 def derive_contacts_icon():
     """The address-book icon from friendfindingoptions.png (the crop's row 1,
     device px x 36-194, y 38-197), keyed by connected flood against the
@@ -222,10 +249,14 @@ derive_close_x_white()
 derive_countdown_clock()
 derive_calendar_glyph()
 derive_contacts_icon()
+derive_friend_streak_placeholder()
+derive_manage_label()
 derive_two_friend_trim()
 key_white_upload("avatar-pair-clean")
 key_white_upload("course-score-duo-feed-icon")
 key_white_upload("celebrate-score-duo")
 key_white_upload("two-friend-icon-no-bg")
 key_white_upload("monthly-badge-locked-icon")
+key_white_upload("manage-button-text", tol=200, rim=3, soft=150)   # a soft, low-res crop: most of its ink is white-blended antialias; un-blend it hard
 key_white_upload("nudge-cta-icon")
+key_white_upload("course-buddies-profile-promo")   # the card's rounded corners: the top-left corner's white is its own blob, unreachable from the right/bottom flood (Sept 28)
