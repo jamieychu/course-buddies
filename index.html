@@ -642,33 +642,40 @@
        Design Notes below.
        ============================================ */
     .test-intro {
-      margin-bottom: 28px;
+      margin-bottom: 20px;
     }
 
-    .bet {
-      margin-bottom: 28px;
+    /* The three bets reuse the decision-card treatment: each bet tests one
+       of the decisions above, and its icon tint matches that decision. */
+    .measure {
+      margin-top: 16px;
+      padding: clamp(20px, 3vw, 24px);
+      background: var(--dl-surface);
+      border: 1px solid var(--dl-border);
+      border-radius: 16px;
     }
-    .bet:last-of-type { margin-bottom: 0; }
 
-    .bet h3,
+    .measure-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .measure-head .feature-icon {
+      margin-bottom: 0;
+      width: 36px;
+      height: 36px;
+      font-size: 18px;
+    }
+
     .measure h3,
     .kill-test h3 {
       font-family: var(--font-display);
       font-size: 16px;
       font-weight: 600;
       color: var(--dl-text);
-      margin-bottom: 8px;
     }
-
-    .measure {
-      margin-top: 32px;
-      padding: 20px clamp(20px, 3vw, 24px) 22px;
-      background: var(--dl-surface);
-      border: 1px solid var(--dl-border);
-      border-radius: 16px;
-    }
-
-    .measure h3 { margin-bottom: 12px; }
 
     .measure-list {
       list-style: none;
@@ -695,8 +702,21 @@
       margin-top: 8px;
     }
 
+    /* The kill test is the section's argument, not a spec: a callout,
+       not another card. */
     .kill-test {
-      margin-top: 32px;
+      margin-top: 16px;
+      padding: 20px clamp(20px, 3vw, 24px);
+      border-left: 3px solid var(--dl-green);
+      background: rgba(120,201,60,0.05);
+      border-radius: 0 16px 16px 0;
+    }
+
+    .kill-test h3 { margin-bottom: 10px; }
+
+    .kill-test p {
+      font-size: 15px;
+      line-height: 1.65;
     }
 
     /* ============================================
@@ -967,23 +987,29 @@
             <p>Three calls on this page are bets. Each one ships with the alternative already chosen and the signal that would trigger it.</p>
           </div>
 
-          <div class="bet">
-            <h3>No material reward</h3>
-            <p>The call is to ship with nothing you couldn't earn by yourself. Then watch pair survival at 30 days. Pairs that form and then go quiet mean the relationship isn't carrying the exchange on its own, and the move is a reward on the monthly badge, the one thing you can't earn alone. Duolingo has run this sequence before: Friend Streak shipped as a shared count, and gifting arrived later once the interaction proved thin.</p>
-          </div>
-
-          <div class="bet">
-            <h3>Choosing from four cards</h3>
-            <p>The call is to offer four cards, each a question type paired with a character, and no preview or re-roll on the questions themselves. Then watch whether picks are deliberate, tracking either what a buddy has been missing or a character they like. Picks that look random mean the choosing isn't doing the work the design assumes, and the move is showing the sender the questions before they go.</p>
-          </div>
-
-          <div class="bet">
-            <h3>Review clearing at node level</h3>
-            <p>The call is to have a rewound partner clear their range one node at a time. Then watch whether they abandon before they converge. If the range is what kills pairs, the move is clearing by unit. That's faster, and it also lets someone tick off content without doing it, which costs some of the shared material the feature depends on.</p>
+          <div class="features-grid">
+            <div class="feature-card">
+              <div class="feature-icon" style="background:rgba(245,201,68,0.12);">🎁</div>
+              <h3>No material reward</h3>
+              <p>The call is to ship with nothing you couldn't earn by yourself. Then watch pair survival at 30 days. Pairs that form and then go quiet mean the relationship isn't carrying the exchange on its own, and the move is a reward on the monthly badge, the one thing you can't earn alone. Duolingo has run this sequence before: Friend Streak shipped as a shared count, and gifting arrived later once the interaction proved thin.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background:rgba(247,129,203,0.12);">🃏</div>
+              <h3>Choosing from four cards</h3>
+              <p>The call is to offer four cards, each a question type paired with a character, and no preview or re-roll on the questions themselves. Then watch whether picks are deliberate, tracking either what a buddy has been missing or a character they like. Picks that look random mean the choosing isn't doing the work the design assumes, and the move is showing the sender the questions before they go.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background:rgba(120,201,60,0.12);">🔁</div>
+              <h3>Review clearing at node level</h3>
+              <p>The call is to have a rewound partner clear their range one node at a time. Then watch whether they abandon before they converge. If the range is what kills pairs, the move is clearing by unit. That's faster, and it also lets someone tick off content without doing it, which costs some of the shared material the feature depends on.</p>
+            </div>
           </div>
 
           <div class="measure">
-            <h3>How it gets measured</h3>
+            <div class="measure-head">
+              <div class="feature-icon" style="background:rgba(85,172,239,0.12);">📊</div>
+              <h3>How it gets measured</h3>
+            </div>
             <ul class="measure-list">
               <li>Primary: days active per Course Buddy per month</li>
               <li>Against: unpaired learners matched on segment and baseline activity</li>
