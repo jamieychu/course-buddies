@@ -1,106 +1,1074 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Course Buddies — prototype</title>
-<!--
-  PHONE-FRAME SHELL (Sept 15). Embeds prototype.html, untouched, in an
-  iframe at exactly 393 x 852 inside a phone bezel. The prototype stays a
-  standalone file; this shell never scripts into it.
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Course Buddies — Duolingo Co-Learning Feature</title>
+  <meta name="description" content="Course Buddies: a co-learning feature for Duolingo that pairs two learners through the same course. Portfolio prototype by Jamie Chu.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-    scaling     transform: scale(n) on the phone (bezel and all), never by
-                resizing the iframe — a resize would change the prototype's
-                viewport and could reflow it; a transform can't.
-                n = min(1, availableHeight / 852), recomputed on resize;
-                never above 1 (3x assets soften when upscaled).
-    fullscreen  requestFullscreen on the page container: the browser chrome
-                and the page furniture go, the phone — bezel included —
-                stays exactly as it is under the same scale rule; Escape or
-                the control exits and the framed view is restored.
-    < 420px     someone's own phone: the bezel drops and the iframe fills the
-                viewport edge to edge at scale 1. Separate from fullscreen.
-    deployment  every path relative (served from a subpath, or file://);
-                static, no build, no dependencies, nothing fetched from a
-                network by this file. Layout: index.html and prototype.html
-                side by side, assets/ beside them (the prototype's own
-                relative references).
+    /* ============================================
+       TOKENS — measured from native iPhone captures
+       ============================================ */
+    :root {
+      --dl-page: #151F23;
+      --dl-surface: #232E35;
+      --dl-bezel: #0E1518;
+      --dl-bezel-ring: #3A454E;
 
-  The dynamic-island cutout is drawn shallow (top 8, 24 tall) so it clears
-  the scenario picker's label, which sits at y 37-53 at the top centre of
-  the prototype; a full-height island (11-48) would cover it.
--->
-<style>
-  html, body { margin: 0; height: 100%; background: #F7F7F5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  /* the control sits 28 below the bezel's bottom edge (the bezel overflows the
-     phone box by 14, so the flex gap is 42): a separate control, not something
-     attached to the device; the phone centres in what's left */
-  #stage { position: fixed; inset: 0; background: #F7F7F5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 42px; overflow: hidden; }
-  #stage:fullscreen { background: #F7F7F5; }
+      --dl-green: #78C93C;          /* accent */
+      --dl-green-edge: #5EA32E;
+      --dl-green-gloss: #96DC55;
+      --dl-pink: #F781CB;           /* the co-learning colour, secondary */
+      --dl-blue: #55ACEF;           /* also link colour */
+      --dl-blue-edge: #3F8BC2;
+      --dl-gold: #F5C944;
+      --dl-gold-edge: #E0A63B;
+      --dl-purple: #896AC7;
+      --dl-purple-edge: #6E55A0;
 
-  /* the slot takes the SCALED size so the flex column centres the phone and
-     the control as a unit; the phone itself keeps its 393 x 852 layout box
-     and is scaled with a transform about its centre */
-  #slot { position: relative; flex: none; width: 393px; height: 852px; }
-  #phone { position: absolute; left: 50%; top: 50%; width: 393px; height: 852px; margin: -426px 0 0 -196.5px; transform-origin: center; }
-  .bezel { position: absolute; inset: -14px; border-radius: 56px; background: #1C1C1E;
-           box-shadow: 0 30px 70px rgba(0, 0, 0, 0.30), 0 8px 22px rgba(0, 0, 0, 0.18), inset 0 0 0 2px #2A2A2D; }
-  .bezel::before { content: ""; position: absolute; left: -3px; top: 150px; width: 3px; height: 34px; border-radius: 2px 0 0 2px; background: #2A2A2D; box-shadow: 0 64px 0 #2A2A2D, 0 124px 0 #2A2A2D; }
-  .bezel::after  { content: ""; position: absolute; right: -3px; top: 210px; width: 3px; height: 70px; border-radius: 0 2px 2px 0; background: #2A2A2D; }
-  .screen { position: absolute; inset: 0; border-radius: 42px; overflow: hidden; background: #0D1116; }
-  .screen iframe { display: block; width: 393px; height: 852px; border: 0; overflow: hidden; background: #0D1116; }
-  .island { position: absolute; left: 50%; top: 8px; width: 112px; height: 24px; margin-left: -56px; border-radius: 12px; background: #000; pointer-events: none; z-index: 2; }
+      --dl-text: #FFFFFF;
+      --dl-text-secondary: #778188;
+      --dl-text-muted: #5B666D;
+      --dl-border: #3A454E;
+      --dl-border-nav: #2C373C;
 
-  #controls { flex: none; display: flex; gap: 10px; align-items: center; }
-  #controls button { appearance: none; border: 1.5px solid #D6D6D2; background: #FFFFFF; color: #333; font: 600 13px/1 inherit; letter-spacing: 0.2px; padding: 10px 16px; border-radius: 999px; cursor: pointer; }
-  #controls button:hover { border-color: #BDBDB8; }
-  #stage:fullscreen #enter { display: none; }
-  #exit { display: none; }
-  #stage:fullscreen #exit { display: inline-block; }
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
 
-  /* someone's own phone: no frame inside a phone. The iframe fills the
-     viewport edge to edge at scale 1; the prototype's own fit handles the
-     rest. Fullscreen doesn't apply here. */
-  @media (max-width: 419.98px) {
-    #stage { display: block; }
-    #slot { width: 100%; height: 100%; }
-    #phone { position: fixed; inset: 0; width: 100%; height: 100%; margin: 0; transform: none !important; }
-    .bezel, .island, #controls { display: none; }
-    .screen { border-radius: 0; }
-    .screen iframe { width: 100%; height: 100%; }
-  }
-</style>
+      /* the prototype's fixed stage; never changes */
+      --stage-w: 393px;
+      --stage-h: 852px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--dl-page);
+      color: var(--dl-text);
+      line-height: 1.6;
+      overflow-x: hidden;
+      text-wrap: pretty;
+    }
+
+    /* ============================================
+       SKIP LINK (Accessibility)
+       ============================================ */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: 16px;
+      background: var(--dl-green);
+      color: var(--dl-page);
+      padding: 8px 16px;
+      border-radius: 0 0 8px 8px;
+      z-index: 9999;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ============================================
+       LAYOUT — one breakpoint: ≥1025 side-by-side, ≤1024 stacked.
+       Container fills the viewport edge-to-edge; only the content
+       panel has a max-width.
+       ============================================ */
+    .showcase-layout {
+      display: flex;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+
+    /* LEFT: Prototype panel (desktop only, sticky) */
+    .prototype-panel { display: none; }
+
+    /* RIGHT: Content panel */
+    .content-panel {
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* ============================================
+       DEVICE FRAME — shared by desktop and mobile.
+       The iframe is always laid out at exactly 393×852 CSS px and
+       is only ever transformed. The prototype's own fit() reads
+       min(innerWidth/393, innerHeight/852) from its window, so any
+       other iframe size makes it scale itself a second time.
+       --scale is set on .device by the script at the foot of the page
+       from the size of its slot; the CSS values are no-JS fallbacks.
+       ============================================ */
+    .device {
+      --scale: 1;
+      --ring: max(7px, calc(12px * var(--scale)));   /* bezel follows the frame down, with a floor */
+      position: relative;
+      isolation: isolate;
+      width: calc(var(--stage-w) * var(--scale));
+      height: calc(var(--stage-h) * var(--scale));
+      border-radius: max(18px, calc(40px * var(--scale)));
+      overflow: hidden;
+      background: var(--dl-page);
+      flex-shrink: 0;
+      box-shadow:
+        0 0 0 calc(var(--ring) - 2px) #1E272D,
+        0 0 0 var(--ring) var(--dl-bezel-ring),
+        0 25px 60px -10px rgba(0,0,0,0.6),
+        0 0 80px rgba(120,201,60,0.06);
+    }
+
+    /* Notch — 26px at stage scale. Sits inside the empty top of the
+       prototype's scenario band (label starts ~41px down), so it never
+       covers the picker. */
+    .device::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 35%;
+      height: calc(26px * var(--scale));
+      background: var(--dl-bezel);
+      border-radius: 0 0 calc(14px * var(--scale)) calc(14px * var(--scale));
+      z-index: 10;
+    }
+
+    /* Home indicator */
+    .device::after {
+      content: '';
+      position: absolute;
+      bottom: calc(8px * var(--scale));
+      left: 50%;
+      transform: translateX(-50%);
+      width: 35%;
+      max-width: calc(134px * var(--scale));
+      height: max(3px, calc(5px * var(--scale)));
+      background: rgba(255,255,255,0.2);
+      border-radius: 100px;
+      z-index: 10;
+    }
+
+    .device iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--stage-w);
+      height: var(--stage-h);
+      border: none;
+      display: block;
+      transform: scale(var(--scale));
+      transform-origin: top left;
+      background: var(--dl-page);
+    }
+
+    .proto-loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--dl-page);
+      color: var(--dl-text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      z-index: 2;
+      transition: opacity 0.4s ease;
+    }
+    .proto-loading.loaded {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* ============================================
+       DESKTOP: sticky prototype panel
+       ============================================ */
+    @media (min-width: 1025px) {
+      .prototype-panel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        width: 520px;
+        min-width: 520px;
+        height: 100vh;
+        height: 100dvh;
+        position: sticky;
+        top: 0;
+        padding: 24px 40px;
+        background: linear-gradient(180deg, #1A252B 0%, var(--dl-page) 100%);
+        border-right: 1px solid var(--dl-border-nav);
+      }
+
+      /* The slot is the measured box; the device is centred in it and
+         sized from --scale. data-ring keeps the bezel rings inside. */
+      .device-slot--desktop {
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .desktop-fullscreen-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--dl-text-muted);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        transition: color 0.2s;
+        flex-shrink: 0;
+      }
+      .desktop-fullscreen-link:hover { color: var(--dl-blue); }
+      .desktop-fullscreen-link svg { width: 14px; height: 14px; }
+    }
+
+    /* ============================================
+       MOBILE / STACKED: live preview with tap overlay
+       ============================================ */
+    .mobile-proto-preview {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 28px 16px 44px;
+      background: linear-gradient(180deg, #1A252B 0%, var(--dl-page) 100%);
+    }
+
+    /* Frame width is a CSS rule; the script only reads it. Covers the
+       old 180 / 200 / 260 tiers in one expression. */
+    .device-slot--mobile {
+      width: clamp(180px, 46vw, 280px);
+    }
+
+    .device--mobile {
+      --scale: 0.46;
+      --ring: 6.5px;
+      border-radius: 24px;
+      box-shadow:
+        0 0 0 calc(var(--ring) - 1.5px) #1E272D,
+        0 0 0 var(--ring) var(--dl-bezel-ring),
+        0 12px 32px -6px rgba(0,0,0,0.5),
+        0 0 50px rgba(120,201,60,0.05);
+    }
+
+    .device--mobile iframe { pointer-events: none; }
+
+    .mobile-tap-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 11;
+      background: rgba(13,20,23,0.45);
+      backdrop-filter: blur(1px);
+      -webkit-backdrop-filter: blur(1px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .mobile-tap-overlay:hover { background: rgba(13,20,23,0.35); }
+
+    /* The one nod to the 3D button vocabulary: green face, darker edge. */
+    .mobile-tap-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: var(--dl-green);
+      color: var(--dl-page);
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 12px;
+      border-bottom: 4px solid var(--dl-green-edge);
+      box-shadow: 0 4px 20px rgba(120,201,60,0.3);
+      transition: background 0.15s, transform 0.08s, border-bottom-width 0.08s;
+    }
+    .mobile-tap-overlay:hover .mobile-tap-btn { background: var(--dl-green-gloss); }
+    .mobile-tap-overlay:active .mobile-tap-btn {
+      transform: translateY(2px);
+      border-bottom-width: 2px;
+    }
+
+    .mobile-tap-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+      font-weight: 500;
+    }
+
+    /* After the base rule so it wins at equal specificity */
+    @media (min-width: 1025px) {
+      .mobile-proto-preview { display: none; }
+    }
+
+    /* ============================================
+       CONTENT SECTIONS
+       ============================================ */
+    .content-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 48px clamp(16px, 4vw, 24px) 80px;
+    }
+
+    @media (min-width: 1025px) {
+      .content-inner {
+        padding: 64px 48px 96px;
+      }
+    }
+
+    /* Header */
+    .page-header {
+      margin-bottom: 48px;
+    }
+
+    .project-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--dl-green);
+      margin-bottom: 16px;
+    }
+    .project-label::before {
+      content: '';
+      width: 20px;
+      height: 2px;
+      background: var(--dl-green);
+      border-radius: 1px;
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 5vw, 44px);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      color: var(--dl-text);
+      margin-bottom: 20px;
+    }
+
+    .subtitle {
+      font-size: 17px;
+      color: var(--dl-text-secondary);
+      line-height: 1.65;
+      max-width: 600px;
+    }
+
+    /* Section styling */
+    .section {
+      margin-bottom: 48px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--dl-green);
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--dl-text);
+      margin-bottom: 16px;
+    }
+
+    p { color: var(--dl-text-secondary); margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--dl-border-nav);
+      margin: 48px 0;
+    }
+
+    /* ============================================
+       DOCS LINK
+       ============================================ */
+    .docs-link-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 24px;
+      background: var(--dl-surface);
+      border: 1px solid var(--dl-border);
+      border-radius: 16px;
+      text-decoration: none;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .docs-link-card:hover {
+      border-color: rgba(120,201,60,0.4);
+      transform: translateY(-1px);
+    }
+
+    .docs-link-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(120,201,60,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 20px;
+    }
+
+    .docs-link-text h3 {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--dl-text);
+      margin-bottom: 2px;
+    }
+
+    .docs-link-text p {
+      font-size: 13px;
+      color: var(--dl-text-muted);
+    }
+
+    /* ============================================
+       KEY DESIGN DECISIONS
+       ============================================ */
+    .features-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .feature-card {
+      background: var(--dl-surface);
+      border: 1px solid var(--dl-border);
+      border-radius: 16px;
+      padding: clamp(20px, 3vw, 24px);
+      transition: border-color 0.2s;
+    }
+    .feature-card:hover { border-color: rgba(120,201,60,0.4); }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      font-size: 20px;
+    }
+
+    .feature-card h3 {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--dl-text);
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--dl-text-secondary);
+    }
+
+    /* ============================================
+       SCENARIO GUIDE
+       ============================================ */
+    .path-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .path-card {
+      background: var(--dl-surface);
+      border: 1px solid var(--dl-border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .path-header {
+      padding: 20px clamp(20px, 3vw, 24px) 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .path-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    .path-badge.path-a { background: rgba(85,172,239,0.15); color: var(--dl-blue); }
+    .path-badge.path-b { background: rgba(245,201,68,0.15); color: var(--dl-gold); }
+
+    .path-header h3 {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--dl-text);
+    }
+
+    .path-body {
+      padding: 0 clamp(20px, 3vw, 24px) 20px;
+    }
+
+    .path-body .path-subtitle {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--dl-text-muted);
+      margin-bottom: 10px;
+    }
+
+    .path-body p {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .happy-path {
+      margin-top: 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(120,201,60,0.14);
+      overflow: hidden;
+    }
+
+    .happy-path summary {
+      padding: 10px 16px;
+      background: rgba(120,201,60,0.06);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--dl-green);
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    .happy-path summary:hover { background: rgba(120,201,60,0.1); }
+    .happy-path summary::-webkit-details-marker { display: none; }
+    .happy-path summary::after {
+      content: '＋';
+      font-size: 14px;
+      font-weight: 400;
+      transition: transform 0.2s;
+    }
+    .happy-path[open] summary::after {
+      content: '−';
+    }
+
+    .happy-path-content {
+      padding: 12px 16px;
+      background: rgba(120,201,60,0.03);
+    }
+
+    .happy-path-content ol {
+      list-style: none;
+      counter-reset: step;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .happy-path-content ol li {
+      counter-increment: step;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--dl-text-secondary);
+    }
+
+    .happy-path-content ol li::before {
+      content: counter(step);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--dl-green);
+      background: rgba(120,201,60,0.1);
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .happy-path-content ol li strong {
+      font-weight: 600;
+      color: var(--dl-text);
+    }
+
+    /* ============================================
+       HOW I'D TEST THIS
+       Prose, not cards, so the three bets don't rhyme with the
+       decision cards above. The measurement block gets a raised panel
+       with dot markers so it doesn't rhyme with the arrow list in
+       Design Notes below.
+       ============================================ */
+    .test-intro {
+      margin-bottom: 28px;
+    }
+
+    .bet {
+      margin-bottom: 28px;
+    }
+    .bet:last-of-type { margin-bottom: 0; }
+
+    .bet h3,
+    .measure h3,
+    .kill-test h3 {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--dl-text);
+      margin-bottom: 8px;
+    }
+
+    .measure {
+      margin-top: 32px;
+      padding: 20px clamp(20px, 3vw, 24px) 22px;
+      background: var(--dl-surface);
+      border: 1px solid var(--dl-border);
+      border-radius: 16px;
+    }
+
+    .measure h3 { margin-bottom: 12px; }
+
+    .measure-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .measure-list li {
+      display: flex;
+      gap: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--dl-text-secondary);
+    }
+
+    .measure-list li::before {
+      content: '';
+      flex-shrink: 0;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--dl-green);
+      margin-top: 8px;
+    }
+
+    .kill-test {
+      margin-top: 32px;
+    }
+
+    /* ============================================
+       DESIGN NOTES
+       ============================================ */
+    .notes-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .notes-list li {
+      display: flex;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--dl-text-secondary);
+      line-height: 1.6;
+    }
+
+    .notes-list li::before {
+      content: '→';
+      color: var(--dl-text-muted);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ============================================
+       TOOLS
+       ============================================ */
+    .tools-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .tool-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: var(--dl-surface);
+      border: 1px solid var(--dl-border);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--dl-text-secondary);
+      text-decoration: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .tool-tag:hover { border-color: var(--dl-text-muted); color: var(--dl-text); }
+
+    /* ============================================
+       FOOTER
+       ============================================ */
+    .page-footer {
+      padding: 32px 24px;
+      text-align: center;
+      border-top: 1px solid var(--dl-border-nav);
+    }
+
+    .footer-label {
+      font-size: 12px;
+      color: var(--dl-text-muted);
+      margin-bottom: 4px;
+    }
+
+    .footer-name {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--dl-text);
+    }
+
+    /* Focus styles for accessibility */
+    a:focus-visible, button:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--dl-green);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    }
+  </style>
 </head>
 <body>
-<div id="stage">
-  <div id="slot"><div id="phone">
-    <div class="bezel"></div>
-    <div class="screen"><div class="island"></div><iframe src="prototype.html" title="Course Buddies prototype" scrolling="no"></iframe></div>
-  </div></div>
-  <div id="controls"><button id="enter" type="button">View Fullscreen</button><button id="exit" type="button">Exit Fullscreen</button></div>
-</div>
-<script>
-  (function () {
-    const stage = document.getElementById("stage"), slot = document.getElementById("slot"), phone = document.getElementById("phone"), controls = document.getElementById("controls");
-    const FRAME = 14, GAP = 42, MARGIN = 24;
-    const own = window.matchMedia("(max-width: 419.98px)");
+  <a href="#main-content" class="skip-link">Skip to main content</a>
 
-    function fit() {
-      if (own.matches) { slot.style.width = slot.style.height = ""; phone.style.transform = ""; return; }
-      /* the height the phone can have: the viewport minus the bezel's overflow, the gap, the control row and margins */
-      const available = window.innerHeight - 2 * FRAME - GAP - controls.offsetHeight - 2 * MARGIN;
-      const n = Math.max(0.2, Math.min(1, available / 852));
-      phone.style.transform = `scale(${n})`;
-      slot.style.width = (393 * n) + "px"; slot.style.height = (852 * n) + "px";
-    }
-    window.addEventListener("resize", fit);
-    document.addEventListener("fullscreenchange", fit);
-    own.addEventListener ? own.addEventListener("change", fit) : own.addListener(fit);
+  <div class="showcase-layout">
+    <!-- LEFT: Desktop prototype panel -->
+    <aside class="prototype-panel" aria-label="Prototype preview">
+      <div class="device-slot device-slot--desktop" data-device-slot data-fit-height data-ring="12">
+        <div class="device device--desktop" id="desktop-device">
+          <div class="proto-loading" id="desktop-loader">Loading prototype…</div>
+          <iframe
+            src="prototype.html"
+            title="Course Buddies interactive prototype"
+            loading="lazy"
+            allow="autoplay"
+            onload="document.getElementById('desktop-loader').classList.add('loaded')"
+          ></iframe>
+        </div>
+      </div>
+      <a href="prototype.html" target="_blank" rel="noopener" class="desktop-fullscreen-link">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        View Fullscreen
+      </a>
+    </aside>
 
-    document.getElementById("enter").onclick = () => { if (stage.requestFullscreen) stage.requestFullscreen(); else if (stage.webkitRequestFullscreen) stage.webkitRequestFullscreen(); };
-    document.getElementById("exit").onclick = () => { if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); };
-    fit();
-  })();
-</script>
+    <!-- RIGHT: Content -->
+    <main class="content-panel" id="main-content" aria-label="Project write-up">
+
+      <!-- Mobile / stacked: Live prototype preview -->
+      <div class="mobile-proto-preview">
+        <div class="device-slot device-slot--mobile" data-device-slot data-ring="0">
+          <div class="device device--mobile" id="mobile-device">
+            <div class="proto-loading" id="mobile-loader">Loading…</div>
+            <iframe
+              src="prototype.html"
+              title="Course Buddies prototype preview"
+              loading="lazy"
+              tabindex="-1"
+              onload="document.getElementById('mobile-loader').classList.add('loaded')"
+            ></iframe>
+            <a href="prototype.html" class="mobile-tap-overlay" aria-label="Open prototype fullscreen">
+              <span class="mobile-tap-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                Open Prototype
+              </span>
+              <span class="mobile-tap-label">Tap to open fullscreen</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-inner">
+
+        <!-- HEADER -->
+        <header class="page-header">
+          <div class="project-label">Duolingo · Social &amp; Retention</div>
+          <h1>Course Buddies</h1>
+          <p class="subtitle">Duolingo's social features work across any course, which is what makes them scale, and it also means two people never share more than a number. Course Buddies pairs them through the same course from the same starting point, so the person you're learning with knows exactly the material you're working through.</p>
+        </header>
+
+        <!-- DOCS LINK -->
+        <section class="section" aria-label="Documentation">
+          <a href="https://jamieychu.notion.site/course-buddies" target="_blank" rel="noopener" class="docs-link-card" id="docs-link">
+            <div class="docs-link-icon">📄</div>
+            <div class="docs-link-text">
+              <h3>View Full Documentation →</h3>
+              <p>Strategy, feature spec, UX specifications &amp; prototype methodology</p>
+            </div>
+          </a>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- PRODUCT CHALLENGE -->
+        <section class="section" aria-labelledby="challenge-heading">
+          <div class="section-label" id="challenge-heading">Product Challenge</div>
+          <div class="challenge-content">
+            <p>Two friends going to Japan in six months. A couple where one is learning the other's first language. Two people who both quit and want to try again together. Friend Streaks, Friends Quests, and Leaderboards will keep all of them opening the app, but none of it puts them in the material together. The casual learner loses most: 58.7M of Duolingo's 140.6M monthly learners show up on a given day, and a streak that breaks on the first miss turns a commitment into a record of missing.</p>
+            <p>So the design question became: what would it take for two people to be working through the same material together, in a product built entirely around going at your own pace?</p>
+          </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- KEY DESIGN DECISIONS -->
+        <section class="section" aria-labelledby="decisions-heading">
+          <div class="section-label" id="decisions-heading">Key Design Decisions</div>
+          <div class="features-grid">
+            <div class="feature-card">
+              <div class="feature-icon" style="background:rgba(120,201,60,0.12);">🤝</div>
+              <h3>Agreeing Where to Begin</h3>
+              <p>A pair settles on one of two starting points: pick up where you both are, or start from the beginning. Whoever's further along gives up ground without losing any of it, since the units they rewind to appear as rings on nodes they've already cleared and get worked through at their own pace.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background:rgba(247,129,203,0.12);">✏️</div>
+              <h3>You Answer Before You Send</h3>
+              <p>The only thing a pair sends each other is a five-question review quiz. Four cards are on offer, each a question type paired with a character, and picking one means answering all five yourself, so your buddy gets those exact five. It costs 5 energy against a 25-a-day budget, and because the sender does the retrieval practice too, a quiz is practice for both people rather than a favor.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background:rgba(245,201,68,0.12);">🎉</div>
+              <h3>Nothing to Farm</h3>
+              <p>XP sits at parity with practicing alone, and a milestone earns a celebration and a feed post and nothing else. The feature adds no material value over solo learning, which means a buddy is worth having only if the person is.</p>
+            </div>
+          </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- SCENARIO GUIDE -->
+        <section class="section" aria-labelledby="paths-heading">
+          <div class="section-label">Scenario Guide</div>
+          <h2 id="paths-heading">Two Paths to Explore</h2>
+          <p style="margin-bottom:20px;">Each path starts a pair at a different point in their learning. Use the scenario picker at the top of the phone screen to switch between them or reset.</p>
+
+          <div class="path-cards">
+            <!-- PATH A -->
+            <article class="path-card">
+              <div class="path-header">
+                <span class="path-badge path-a">Path A</span>
+                <h3>Fresh Start</h3>
+              </div>
+              <div class="path-body">
+                <p class="path-subtitle">No Japanese yet, Korean at Score 10</p>
+                <p>A pair forming from nothing. You add Japanese, invite a friend who's also starting at zero, and the Path gains a co-learning layer: your buddy's marker, a challenge tile, and quizzes that unlock once you've both finished the unit. Ends with a shared milestone landing in the feed.</p>
+                <details class="happy-path">
+                  <summary>Happy Path</summary>
+                  <div class="happy-path-content">
+                    <ol>
+                      <li><span>Tap the course flag, then the <strong>+ Course</strong> tile</span></li>
+                      <li><span>Choose Japanese, tap <strong>With a friend</strong></span></li>
+                      <li><span>Tap <strong>Invite</strong>, then <strong>Continue</strong></span></li>
+                      <li><span>Tap <strong>Continue</strong> on the acceptance screen</span></li>
+                      <li><span>Tap your buddy's marker on the Path</span></li>
+                      <li><span>Open the first node, <strong>Simulate complete unit</strong></span></li>
+                      <li><span>Tap the pink tile, pick a quiz type</span></li>
+                      <li><span>Answer the five, then <strong>Send</strong></span></li>
+                      <li><span>Tap the tile through the reply and answer back</span></li>
+                      <li><span>Reach Score 6, then open the Feed 🎉</span></li>
+                    </ol>
+                  </div>
+                </details>
+              </div>
+            </article>
+
+            <!-- PATH B -->
+            <article class="path-card">
+              <div class="path-header">
+                <span class="path-badge path-b">Path B</span>
+                <h3>Meet Up</h3>
+              </div>
+              <div class="path-body">
+                <p class="path-subtitle">Japanese at Score 10, one unit ahead of your buddy</p>
+                <p>The harder case: two people already learning, out of step. You rewind a unit to meet them, and the review range appears as rings on nodes you've already cleared. Nothing you earned is taken away, and one lesson at your own position returns you to it.</p>
+                <details class="happy-path">
+                  <summary>Happy Path</summary>
+                  <div class="happy-path-content">
+                    <ol>
+                      <li><span>Tap the course flag, then <strong>Learn with a friend</strong></span></li>
+                      <li><span>Tap <strong>Invite</strong></span></li>
+                      <li><span>Choose <strong>Pick up together</strong>, tap <strong>Send invite</strong></span></li>
+                      <li><span>Tap <strong>Continue</strong> on the friend list</span></li>
+                      <li><span>Tap <strong>Continue</strong> on the acceptance screen</span></li>
+                      <li><span>Tap your buddy's marker on the Path</span></li>
+                      <li><span>Open the first ringed node, <strong>Simulate review</strong></span></li>
+                      <li><span>Open the last ringed node, <strong>Simulate review all</strong></span></li>
+                      <li><span>Tap your own node, <strong>Simulate complete lesson</strong></span></li>
+                    </ol>
+                  </div>
+                </details>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- HOW I'D TEST THIS -->
+        <section class="section" aria-labelledby="test-heading">
+          <div class="section-label" id="test-heading">How I'd Test This</div>
+          <div class="test-intro">
+            <p>Three calls on this page are bets. Each one ships with the alternative already chosen and the signal that would trigger it.</p>
+          </div>
+
+          <div class="bet">
+            <h3>No material reward</h3>
+            <p>The call is to ship with nothing you couldn't earn by yourself. Then watch pair survival at 30 days. Pairs that form and then go quiet mean the relationship isn't carrying the exchange on its own, and the move is a reward on the monthly badge, the one thing you can't earn alone. Duolingo has run this sequence before: Friend Streak shipped as a shared count, and gifting arrived later once the interaction proved thin.</p>
+          </div>
+
+          <div class="bet">
+            <h3>Choosing from four cards</h3>
+            <p>The call is to offer four cards, each a question type paired with a character, and no preview or re-roll on the questions themselves. Then watch whether picks are deliberate, tracking either what a buddy has been missing or a character they like. Picks that look random mean the choosing isn't doing the work the design assumes, and the move is showing the sender the questions before they go.</p>
+          </div>
+
+          <div class="bet">
+            <h3>Review clearing at node level</h3>
+            <p>The call is to have a rewound partner clear their range one node at a time. Then watch whether they abandon before they converge. If the range is what kills pairs, the move is clearing by unit. That's faster, and it also lets someone tick off content without doing it, which costs some of the shared material the feature depends on.</p>
+          </div>
+
+          <div class="measure">
+            <h3>How it gets measured</h3>
+            <ul class="measure-list">
+              <li>Primary: days active per Course Buddy per month</li>
+              <li>Against: unpaired learners matched on segment and baseline activity</li>
+              <li>Measured per person rather than per pair, since pairs are asynchronous by design and averaging would hide one partner showing up daily while the other shows up twice a month</li>
+              <li>Guardrails: solo lessons completed, 30-day retention</li>
+              <li>Known confound: paired learners self-select, so the reactivation read needs a holdout</li>
+            </ul>
+          </div>
+
+          <div class="kill-test">
+            <h3>The kill test</h3>
+            <p>The prototype shows the full V1. If that scope weren't available, this is the one test worth running first: let people already on the same course, at roughly the same point, send each other five questions. Nothing else.</p>
+            <p>The shared start point, the review range, and the Path layer are the expensive parts, and they're what lets any two people decide to learn together instead of waiting to happen to line up. This tests the exchange itself, on the rare pairs where that alignment already happened by chance. A negative result settles it. If the quiz doesn't hold two people who are already in step, it won't hold two people the feature puts in step. A positive result only tells you the quiz works when the alignment was luck.</p>
+            <p>The constraint is that it has to run on people who already know each other, where those pairs are rare, so it reads slowly. Matching strangers by course and position the way Leagues does would produce volume in a week and would answer a different question: whether a quiz from anyone drives return, rather than a quiz from someone you know.</p>
+          </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- DESIGN NOTES -->
+        <section class="section" aria-labelledby="notes-heading">
+          <div class="section-label">Design Notes</div>
+          <h2 id="notes-heading">Caveats &amp; Context</h2>
+          <ul class="notes-list">
+            <li>Built on the author's own Duolingo account. Every screen is a real capture, which is why the profile and friend names are real ones. No Duolingo characters or icons were generated or redrawn.</li>
+            <li>Prototype covers two scenarios in one course (Japanese, plus one Korean screen to establish a second course exists). Everything outside those two paths is unbuilt.</li>
+            <li>Simulate controls advance state that would take days in reality: completing a unit, a partner answering, reaching a milestone. Buttons relabeled in place stand in for something you could do; dashed-border controls appear only where the fiction is that your buddy acted.</li>
+            <li>Static fidelity, no motion. A deliberate scope call.</li>
+            <li>Dark mode throughout, because that's the account's setting.</li>
+            <li>Published Duolingo figures cited from 2024 and Q2 2026 reporting.</li>
+          </ul>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- TOOLS -->
+        <section class="section" aria-labelledby="tools-heading">
+          <div class="section-label" id="tools-heading">Built With</div>
+          <div class="tools-row">
+            <a href="https://claude.ai" target="_blank" rel="noopener" class="tool-tag">🤖 Claude AI</a>
+            <a href="https://www.notion.so" target="_blank" rel="noopener" class="tool-tag">📝 Notion</a>
+            <a href="https://www.figma.com" target="_blank" rel="noopener" class="tool-tag">🎨 Figma</a>
+          </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="page-footer">
+          <p class="footer-label">Designed &amp; Created by</p>
+          <p class="footer-name">Jamie Chu</p>
+        </footer>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    /* Device scaling. The iframe stays at 393×852; only --scale on .device
+       changes. Each slot's CSS defines the space available (desktop: the
+       sticky panel minus the fullscreen link; mobile: a clamp() width),
+       and this reads that box and sets the scale. Never above 1: the
+       prototype's assets are 3x sources and upscaling softens them. */
+    (function () {
+      var STAGE_W = 393, STAGE_H = 852;
+      var slots = Array.prototype.slice.call(document.querySelectorAll('[data-device-slot]'));
+
+      function fitSlot(slot) {
+        var device = slot.querySelector('.device');
+        if (!device) return;
+        var ring = parseFloat(slot.getAttribute('data-ring')) || 0;
+        var w = slot.clientWidth - ring * 2;
+        var h = slot.clientHeight - ring * 2;
+        if (!(w > 0)) return;                       /* slot is display:none at this breakpoint */
+        var s = w / STAGE_W;
+        if (slot.hasAttribute('data-fit-height') && h > 0) s = Math.min(s, h / STAGE_H);
+        s = Math.min(1, s);
+        device.style.setProperty('--scale', s.toFixed(4));
+      }
+
+      function fitAll() { slots.forEach(fitSlot); }
+
+      if ('ResizeObserver' in window) {
+        var ro = new ResizeObserver(fitAll);
+        slots.forEach(function (slot) { ro.observe(slot); });
+      } else {
+        window.addEventListener('resize', fitAll);
+      }
+      fitAll();
+    })();
+  </script>
 </body>
 </html>
